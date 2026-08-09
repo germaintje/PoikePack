@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { PackObject3D } from './PackObject3D'
+import { PackVisual } from './PackVisual'
 import { usePackStore } from '../store/usePackStore'
 
 export function PackOpeningScreen() {
@@ -42,9 +42,10 @@ export function PackOpeningScreen() {
             />
           )}
         </AnimatePresence>
-        <PackObject3D
+        <PackVisual
           colorFrom={selectedPack.colorFrom}
           colorTo={selectedPack.colorTo}
+          logoImage={selectedPack.logoImage}
           tearing={tearing}
         />
       </div>
