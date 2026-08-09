@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "sync": "tsx src/sync.ts"
+    "sync": "tsx src/sync.ts",
+    "sync:all": "cross-env SYNC_ALL_SETS=true tsx src/sync.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
@@ -13,6 +14,7 @@
   "devDependencies": {
     "@types/node": "^22.10.2",
     "@types/pg": "^8.11.10",
+    "cross-env": "^7.0.3",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
