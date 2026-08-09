@@ -10,7 +10,7 @@ import type {
 } from '../lib/api'
 import { mapCard, mapPackType, mapPulledCard } from '../lib/mapBackend'
 
-type Stage = 'select' | 'opening' | 'reveal' | 'summary'
+type Stage = 'select' | 'detail' | 'opening' | 'reveal' | 'summary'
 export type View = 'packs' | 'binder' | 'quests' | 'leaderboard' | 'profile'
 type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 type DailyBonusStatus = 'idle' | 'claiming' | 'claimed' | 'already-claimed' | 'error'
@@ -81,6 +81,7 @@ interface PackState {
 
   setView: (view: View) => void
   selectPack: (pack: PackType) => void
+  viewPackDetail: (pack: PackType) => void
   openPack: () => Promise<void>
   beginReveal: () => void
   revealNext: () => void
@@ -299,6 +300,8 @@ export const usePackStore = create<PackState>((set, get) => ({
   },
 
   selectPack: (pack) => set({ selectedPack: pack, actionError: null }),
+
+  viewPackDetail: (pack) => set({ selectedPack: pack, stage: 'detail', actionError: null }),
 
   openPack: async () => {
     const { selectedPack, coins, playerLevel } = get()

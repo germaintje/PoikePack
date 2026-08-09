@@ -4,6 +4,7 @@ import { usePackStore } from './store/usePackStore'
 import { Sidebar } from './components/Sidebar'
 import { TopBar } from './components/TopBar'
 import { PackSelectScreen } from './components/PackSelectScreen'
+import { PackDetailScreen } from './components/PackDetailScreen'
 import { PackOpeningScreen } from './components/PackOpeningScreen'
 import { CardRevealScreen } from './components/CardRevealScreen'
 import { SummaryScreen } from './components/SummaryScreen'
@@ -67,6 +68,7 @@ function AppShell() {
             {view === 'leaderboard' && <LeaderboardScreen />}
             {view === 'profile' && <ProfileScreen />}
             {view === 'packs' && stage === 'select' && <PackSelectScreen />}
+            {view === 'packs' && stage === 'detail' && <PackDetailScreen />}
             {view === 'packs' && stage === 'opening' && <PackOpeningScreen />}
             {view === 'packs' && stage === 'reveal' && <CardRevealScreen />}
             {view === 'packs' && stage === 'summary' && <SummaryScreen />}

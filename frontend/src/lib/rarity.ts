@@ -68,3 +68,10 @@ export function isHolo(rarity: string) {
   const tier = tierOf(rarity)
   return tier !== 'common' && tier !== 'uncommon'
 }
+
+const TIER_RANK: Record<RarityTier, number> = { common: 0, uncommon: 1, holo: 2, ultra: 3, secret: 4 }
+
+/** Hoger = zeldzamer. Gebruikt om de "chase cards" van een set te bepalen (lib/types.ts CardData). */
+export function rarityRank(rarity: string): number {
+  return TIER_RANK[tierOf(rarity)]
+}

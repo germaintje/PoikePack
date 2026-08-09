@@ -40,6 +40,7 @@ export function TopBar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
           <h1 className="truncate text-base font-bold text-white sm:text-lg">{PAGE_TITLES[view]}</h1>
           {view === 'packs' && stage !== 'select' && (
             <p className="truncate text-[11px] uppercase tracking-wide text-white/35">
+              {stage === 'detail' && 'Pack bekijken'}
               {stage === 'opening' && 'Pack openen…'}
               {stage === 'reveal' && 'Kaarten onthullen'}
               {stage === 'summary' && 'Resultaat'}
