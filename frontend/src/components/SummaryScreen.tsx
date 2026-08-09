@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { usePackStore } from '../store/usePackStore'
 import { CardTile } from './CardTile'
@@ -6,8 +7,11 @@ export function SummaryScreen() {
   const pulls = usePackStore((s) => s.pulls)
   const reset = usePackStore((s) => s.reset)
   const openPack = usePackStore((s) => s.openPack)
+  const sellDuplicates = usePackStore((s) => s.sellDuplicates)
   const selectedPack = usePackStore((s) => s.selectedPack)
   const coins = usePackStore((s) => s.coins)
+  const lastOpenExtras = usePackStore((s) => s.lastOpenExtras)
+  const [sold, setSold] = useState(false)
 
   const duplicateValue = pulls
     .filter((p) => p.isDuplicate)
@@ -15,6 +19,11 @@ export function SummaryScreen() {
   const bestPull = [...pulls].sort((a, b) => b.sellValue - a.sellValue)[0]
 
   const canReopen = selectedPack && coins >= selectedPack.price
+
+  const handleSell = async () => {
+    await sellDuplicates()
+    setSold(true)
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col items-center px-5 pb-16 pt-4 sm:px-8">
@@ -30,6 +39,29 @@ export function SummaryScreen() {
         </p>
       </motion.div>
 
+      {(lastOpenExtras.setCompletionBonusCoins || lastOpenExtras.unlockedAchievementNames.length > 0) && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+          className="mt-4 flex flex-col items-center gap-1.5"
+        >
+          {lastOpenExtras.setCompletionBonusCoins && (
+            <p className="rounded-full bg-emerald-400/15 px-4 py-1.5 text-sm font-semibold text-emerald-300 ring-1 ring-emerald-400/25">
+              ✨ Set compleet! +{lastOpenExtras.setCompletionBonusCoins} 🪙
+            </p>
+          )}
+          {lastOpenExtras.unlockedAchievementNames.map((name) => (
+            <p
+              key={name}
+              className="rounded-full bg-amber-400/15 px-4 py-1.5 text-sm font-semibold text-amber-300 ring-1 ring-amber-400/25"
+            >
+              🏆 Achievement: {name}
+            </p>
+          ))}
+        </motion.div>
+      )}
+
       <div className="mt-6 grid grid-cols-4 gap-3 sm:grid-cols-8">
         {pulls.map((p, i) => (
           <motion.div
@@ -44,8 +76,21 @@ export function SummaryScreen() {
       </div>
 
       <div className="mt-8 flex w-full max-w-sm items-center justify-between rounded-xl bg-white/5 px-4 py-3 text-sm ring-1 ring-white/10">
-        <span className="text-white/60">Duplicates verkopen (preview)</span>
-        <span className="font-mono font-semibold text-amber-300">+{duplicateValue} 🪙</span>
+        <div>
+          <span className="text-white/60">Al je duplicates verkopen</span>
+          <p className="text-[11px] text-white/30">Uit deze pack: +{duplicateValue} 🪙 (indicatie)</p>
+        </div>
+        {sold ? (
+          <span className="font-mono font-semibold text-emerald-300">Verkocht ✓</span>
+        ) : (
+          <button
+            type="button"
+            onClick={handleSell}
+            className="rounded-full bg-amber-400/20 px-3 py-1.5 text-xs font-semibold text-amber-300 ring-1 ring-amber-300/30 transition hover:bg-amber-400/30"
+          >
+            Verkoop
+          </button>
+        )}
       </div>
 
       <div className="mt-6 flex flex-wrap justify-center gap-3">

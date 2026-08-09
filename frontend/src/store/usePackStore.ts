@@ -1,117 +1,310 @@
 import { create } from 'zustand'
-import type { CardPools, PackType, PullResult } from '../lib/types'
-import { cardPools as fallbackCardPools, packTypes as fallbackPackTypes } from '../data/mockCards'
-import { loadLivePackData } from '../data/livePackData'
+import type { CardData, PackType, PullResult } from '../lib/types'
+import * as api from '../lib/api'
+import type {
+  BackendAchievementStatus,
+  BackendQuestStatus,
+  BackendLeaderboardEntry,
+  BackendProfile,
+  LeaderboardType,
+} from '../lib/api'
+import { mapCard, mapPackType, mapPulledCard } from '../lib/mapBackend'
 
 type Stage = 'select' | 'opening' | 'reveal' | 'summary'
-type LiveStatus = 'idle' | 'loading' | 'ready' | 'error'
+export type View = 'packs' | 'binder' | 'quests' | 'leaderboard' | 'profile'
+type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
+type DailyBonusStatus = 'idle' | 'claiming' | 'claimed' | 'already-claimed' | 'error'
+type AuthStatus = 'checking' | 'signed-out' | 'signed-in' | 'offline'
+type AuthFormMode = 'login' | 'register'
+
+interface LastOpenExtras {
+  setCompletionBonusCoins: number | null
+  unlockedAchievementNames: string[]
+}
 
 interface PackState {
+  authStatus: AuthStatus
+  authFormMode: AuthFormMode
+  authError: string | null
+  authSubmitting: boolean
+
+  userId: number | null
+  name: string
+  email: string
   coins: number
+  playerLevel: number
+  avatarEmoji: string
+  bio: string | null
+
+  profile: BackendProfile | null
+  profileStatus: LoadStatus
+  profileSaving: boolean
+
+  view: View
   stage: Stage
   selectedPack: PackType | null
   pulls: PullResult[]
   revealedCount: number
-  owned: Record<string, number>
+  lastOpenExtras: LastOpenExtras
+
   packTypes: PackType[]
-  cardPools: Record<string, CardPools>
-  liveStatus: LiveStatus
-  loadLiveData: () => Promise<void>
+  packsStatus: LoadStatus
+  actionError: string | null
+
+  setCards: Record<string, CardData[]> // per setId — alle kaarten van de set, voor binder-voortgang
+  owned: Record<string, number> // cardId -> aantal exemplaren
+  binderStatus: LoadStatus
+
+  dailyBonusStatus: DailyBonusStatus
+  dailyBonusStreak: number | null
+  dailyBonusCoinsAwarded: number | null
+
+  quests: BackendQuestStatus[]
+  achievements: BackendAchievementStatus[]
+  questsStatus: LoadStatus
+
+  leaderboardType: LeaderboardType
+  leaderboardEntries: BackendLeaderboardEntry[]
+  leaderboardStatus: LoadStatus
+
+  init: () => Promise<void>
+  setAuthFormMode: (mode: AuthFormMode) => void
+  register: (name: string, email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<void>
+  logout: () => void
+  loadProfile: () => Promise<void>
+  updateProfile: (update: { bio?: string; avatarEmoji?: string }) => Promise<void>
+
+  setView: (view: View) => void
   selectPack: (pack: PackType) => void
-  cancelSelection: () => void
-  openPack: () => void
+  openPack: () => Promise<void>
   beginReveal: () => void
   revealNext: () => void
   finishReveal: () => void
+  sellDuplicates: () => Promise<void>
+  claimDailyBonus: () => Promise<void>
+  loadQuestsAndAchievements: () => Promise<void>
+  loadLeaderboard: (type: LeaderboardType) => Promise<void>
   reset: () => void
 }
 
-function drawRandom<T>(pool: readonly T[], count: number): T[] {
-  const copy = [...pool]
-  const result: T[] = []
-  for (let i = 0; i < count && copy.length > 0; i++) {
-    const idx = Math.floor(Math.random() * copy.length)
-    result.push(copy.splice(idx, 1)[0])
-  }
-  return result
+async function refreshBinder(): Promise<Record<string, number>> {
+  const entries = await api.fetchBinder()
+  const owned: Record<string, number> = {}
+  entries.forEach((e) => {
+    owned[e.cardId] = e.quantity
+  })
+  return owned
 }
 
-function shuffle<T>(arr: T[]): T[] {
-  const copy = [...arr]
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+function applyUser(user: { id: number; name: string; email: string; coins: number; level: number; avatarEmoji: string; bio: string | null }) {
+  return {
+    userId: user.id,
+    name: user.name,
+    email: user.email,
+    coins: user.coins,
+    playerLevel: user.level,
+    avatarEmoji: user.avatarEmoji,
+    bio: user.bio,
   }
-  return copy
+}
+
+async function loadGameData(set: (partial: Partial<PackState>) => void) {
+  set({ packsStatus: 'loading' })
+  const packDtos = await api.fetchPackTypes()
+  const packTypes = packDtos.map(mapPackType)
+  set({ packTypes, packsStatus: 'ready' })
+
+  const uniqueSetIds = [...new Set(packTypes.map((p) => p.setId))]
+  set({ binderStatus: 'loading' })
+  const [setCardsEntries, owned] = await Promise.all([
+    Promise.all(uniqueSetIds.map(async (setId) => [setId, (await api.fetchCardsForSet(setId)).map(mapCard)] as const)),
+    refreshBinder(),
+  ])
+  set({ setCards: Object.fromEntries(setCardsEntries), owned, binderStatus: 'ready' })
 }
 
 export const usePackStore = create<PackState>((set, get) => ({
-  coins: 850,
+  authStatus: 'checking',
+  authFormMode: 'register',
+  authError: null,
+  authSubmitting: false,
+
+  userId: null,
+  name: '',
+  email: '',
+  coins: 0,
+  playerLevel: 1,
+  avatarEmoji: '🧑',
+  bio: null,
+
+  profile: null,
+  profileStatus: 'idle',
+  profileSaving: false,
+
+  view: 'packs',
   stage: 'select',
   selectedPack: null,
   pulls: [],
   revealedCount: 0,
-  owned: {},
-  packTypes: fallbackPackTypes,
-  cardPools: fallbackCardPools,
-  liveStatus: 'idle',
+  lastOpenExtras: { setCompletionBonusCoins: null, unlockedAchievementNames: [] },
 
-  // Haalt echte sets + kaartfoto's op bij de Pokémon TCG API (zie data/livePackData.ts).
-  // Faalt de fetch (netwerk, CORS, rate limit) dan blijft de placeholder-data uit
-  // data/mockCards.ts gewoon actief — de UI merkt daar niets stukgaands van.
-  loadLiveData: async () => {
-    if (get().liveStatus === 'loading' || get().liveStatus === 'ready') return
-    set({ liveStatus: 'loading' })
+  packTypes: [],
+  packsStatus: 'idle',
+  actionError: null,
+
+  setCards: {},
+  owned: {},
+  binderStatus: 'idle',
+
+  dailyBonusStatus: 'idle',
+  dailyBonusStreak: null,
+  dailyBonusCoinsAwarded: null,
+
+  quests: [],
+  achievements: [],
+  questsStatus: 'idle',
+
+  leaderboardType: 'coins',
+  leaderboardEntries: [],
+  leaderboardStatus: 'idle',
+
+  init: async () => {
+    if (get().authStatus !== 'checking' && get().authStatus !== 'offline') return
+    if (!api.getToken()) {
+      set({ authStatus: 'signed-out' })
+      return
+    }
+    set({ authStatus: 'checking' })
     try {
-      const live = await loadLivePackData()
-      set({ packTypes: live.packTypes, cardPools: live.cardPools, liveStatus: 'ready' })
+      const profile = await api.fetchProfile()
+      set({ ...applyUser(profile), authStatus: 'signed-in' })
+      await loadGameData(set)
     } catch (err) {
-      console.warn('Kon geen live Pokémon TCG data laden, gebruik placeholder-data.', err)
-      set({ liveStatus: 'error' })
+      if (err instanceof api.ApiError && err.status === 401) {
+        // Token is echt ongeldig/verlopen — niet hetzelfde als de backend die niet bereikbaar is.
+        api.setToken(null)
+        set({ authStatus: 'signed-out' })
+      } else {
+        console.warn('Kon de backend niet bereiken.', err)
+        set({ authStatus: 'offline' })
+      }
     }
   },
 
-  selectPack: (pack) => set({ selectedPack: pack }),
-  cancelSelection: () => set({ selectedPack: null }),
+  setAuthFormMode: (mode) => set({ authFormMode: mode, authError: null }),
 
-  // Let op: dit is client-side RNG puur voor de UI-mockup. In de echte app bepaalt en
-  // valideert de backend de volledige pack-inhoud server-side — zie docs/PROJECT_BRIEF.md §2.1.
-  openPack: () => {
-    const { selectedPack, coins, owned, cardPools } = get()
-    if (!selectedPack || coins < selectedPack.price) return
+  register: async (name, email, password) => {
+    set({ authSubmitting: true, authError: null })
+    try {
+      const response = await api.register(name, email, password)
+      api.setToken(response.token)
+      set({ ...applyUser(response.user), authStatus: 'signed-in', authSubmitting: false })
+      await loadGameData(set)
+    } catch (err) {
+      set({ authSubmitting: false, authError: err instanceof Error ? err.message : 'Registreren is mislukt.' })
+    }
+  },
 
-    const pool = cardPools[selectedPack.id]
-    if (!pool) return
-    const { commons, uncommons, reverseHolo, hits } = selectedPack.slotConfig
+  login: async (email, password) => {
+    set({ authSubmitting: true, authError: null })
+    try {
+      const response = await api.login(email, password)
+      api.setToken(response.token)
+      set({ ...applyUser(response.user), authStatus: 'signed-in', authSubmitting: false })
+      await loadGameData(set)
+    } catch (err) {
+      set({ authSubmitting: false, authError: err instanceof Error ? err.message : 'Inloggen is mislukt.' })
+    }
+  },
 
-    const commonCards = drawRandom(pool.commons, commons)
-    const uncommonCards = drawRandom(pool.uncommons, uncommons)
-    const reverseHoloCards = drawRandom(pool.reverseHolo, reverseHolo)
-    const hitCards = drawRandom(pool.hits, hits)
-
-    const ordered = [
-      ...shuffle([...commonCards, ...uncommonCards]),
-      ...reverseHoloCards,
-      ...hitCards,
-    ]
-
-    const pulls: PullResult[] = ordered.map((card) => ({
-      ...card,
-      isDuplicate: (owned[card.id] ?? 0) > 0,
-    }))
-
-    const nextOwned = { ...owned }
-    pulls.forEach((p) => {
-      nextOwned[p.id] = (nextOwned[p.id] ?? 0) + 1
-    })
-
+  logout: () => {
+    api.setToken(null)
     set({
-      coins: coins - selectedPack.price,
-      pulls,
-      revealedCount: 0,
-      owned: nextOwned,
-      stage: 'opening',
+      authStatus: 'signed-out',
+      authFormMode: 'login',
+      userId: null,
+      name: '',
+      email: '',
+      coins: 0,
+      playerLevel: 1,
+      avatarEmoji: '🧑',
+      bio: null,
+      profile: null,
+      profileStatus: 'idle',
+      view: 'packs',
+      stage: 'select',
+      packTypes: [],
+      packsStatus: 'idle',
+      setCards: {},
+      owned: {},
+      binderStatus: 'idle',
+      quests: [],
+      achievements: [],
+      questsStatus: 'idle',
     })
+  },
+
+  loadProfile: async () => {
+    set({ profileStatus: 'loading' })
+    try {
+      const profile = await api.fetchProfile()
+      set({ profile, profileStatus: 'ready', ...applyUser(profile) })
+    } catch (err) {
+      console.warn('Kon profiel niet laden.', err)
+      set({ profileStatus: 'error' })
+    }
+  },
+
+  updateProfile: async (update) => {
+    set({ profileSaving: true })
+    try {
+      const profile = await api.updateProfile(update)
+      set({ profile, profileSaving: false, avatarEmoji: profile.avatarEmoji, bio: profile.bio })
+    } catch (err) {
+      console.warn('Bijwerken van profiel is mislukt.', err)
+      set({ profileSaving: false })
+    }
+  },
+
+  setView: (view) => {
+    set({ view })
+    if (view === 'quests') get().loadQuestsAndAchievements()
+    if (view === 'leaderboard') get().loadLeaderboard(get().leaderboardType)
+    if (view === 'profile') get().loadProfile()
+  },
+
+  selectPack: (pack) => set({ selectedPack: pack, actionError: null }),
+
+  openPack: async () => {
+    const { selectedPack, coins } = get()
+    if (!selectedPack) return
+    if (coins < selectedPack.price) {
+      set({ actionError: 'Te weinig coins voor deze pack.' })
+      return
+    }
+
+    try {
+      const response = await api.openPack(Number(selectedPack.id))
+      const pulls: PullResult[] = response.cards.map(mapPulledCard)
+      set({
+        pulls,
+        revealedCount: 0,
+        coins: response.coinsBalance,
+        stage: 'opening',
+        actionError: null,
+        lastOpenExtras: {
+          setCompletionBonusCoins: response.setCompletionBonusCoins,
+          unlockedAchievementNames: response.unlockedAchievementNames,
+        },
+      })
+      // Binder op de achtergrond verversen — hoeft de reveal-flow niet te blokkeren.
+      refreshBinder()
+        .then((owned) => set({ owned }))
+        .catch((err) => console.warn('Kon binder niet verversen na pack-opening.', err))
+    } catch (err) {
+      set({ actionError: err instanceof Error ? err.message : 'Openen van de pack is mislukt.' })
+    }
   },
 
   beginReveal: () => set({ stage: 'reveal' }),
@@ -121,5 +314,57 @@ export const usePackStore = create<PackState>((set, get) => ({
 
   finishReveal: () => set({ stage: 'summary' }),
 
-  reset: () => set({ stage: 'select', selectedPack: null, pulls: [], revealedCount: 0 }),
+  sellDuplicates: async () => {
+    try {
+      const response = await api.sellDuplicates()
+      const owned = await refreshBinder()
+      set({ coins: response.coinsBalance, owned })
+    } catch (err) {
+      set({ actionError: err instanceof Error ? err.message : 'Verkopen is mislukt.' })
+    }
+  },
+
+  claimDailyBonus: async () => {
+    set({ dailyBonusStatus: 'claiming' })
+    try {
+      const response = await api.claimDailyBonus()
+      set({
+        coins: response.coinsBalance,
+        dailyBonusStatus: 'claimed',
+        dailyBonusStreak: response.streak,
+        dailyBonusCoinsAwarded: response.coinsAwarded,
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : ''
+      const alreadyClaimed = message.toLowerCase().includes('al geclaimd')
+      set({ dailyBonusStatus: alreadyClaimed ? 'already-claimed' : 'error' })
+    }
+  },
+
+  loadQuestsAndAchievements: async () => {
+    set({ questsStatus: 'loading' })
+    try {
+      const [quests, achievements] = await Promise.all([
+        api.fetchQuests(),
+        api.fetchAchievements(),
+      ])
+      set({ quests, achievements, questsStatus: 'ready' })
+    } catch (err) {
+      console.warn('Kon quests/achievements niet laden.', err)
+      set({ questsStatus: 'error' })
+    }
+  },
+
+  loadLeaderboard: async (type) => {
+    set({ leaderboardStatus: 'loading', leaderboardType: type })
+    try {
+      const entries = await api.fetchLeaderboard(type)
+      set({ leaderboardEntries: entries, leaderboardStatus: 'ready' })
+    } catch (err) {
+      console.warn('Kon leaderboard niet laden.', err)
+      set({ leaderboardStatus: 'error' })
+    }
+  },
+
+  reset: () => set({ stage: 'select', selectedPack: null, pulls: [], revealedCount: 0, actionError: null }),
 }))

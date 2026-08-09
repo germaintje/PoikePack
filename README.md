@@ -7,8 +7,11 @@ projectbriefing (concept, scope, datamodel, tech stack).
 
 ## Status
 
-🚧 Vroege opzet — repo-structuur staat, en er is een eerste visuele mockup van het
-pack-opening scherm in `frontend/` (placeholder-data, nog geen backend-koppeling).
+🚧 Frontend en backend werken en praten met elkaar: pack openen, coins, binder — allemaal
+backend-authoritatief (server bepaalt de RNG, niet de client). De sync-job haalt echte sets +
+kaarten op bij de Pokémon TCG API (`npm run sync` in `sync-job/`); tot je 'm draait staat er
+een kleine handmatige seed (`database/migrations/V2__seed_demo_data.sql`). Er is nog geen auth
+(zie `backend/README.md`).
 
 ## Monorepo-structuur
 
@@ -16,24 +19,35 @@ pack-opening scherm in `frontend/` (placeholder-data, nog geen backend-koppeling
 poikemon-game/
 ├── docs/          # Projectbriefing en architectuurnotities
 ├── frontend/       # React + Vite + TS + Tailwind + Framer Motion + React Three Fiber
-├── backend/        # Spring Boot API (nog te bouwen)
-├── database/       # Schema/migraties (Flyway/Liquibase, nog te bouwen)
-└── sync-job/       # Periodieke sync tegen de Pokémon TCG API (nog te bouwen)
+├── backend/        # Spring Boot API — pack opening, coins-economie, binder
+├── database/       # Flyway-migraties (schema + demo-seed)
+└── sync-job/       # Sync tegen de Pokémon TCG API -> card_sets/cards
 ```
 
-## Frontend mockup draaien
+## Draaien
+
+Backend en frontend draaien allebei, tegelijk:
 
 ```bash
+# 1. Postgres met een database `pokepack` (schema + seed komen automatisch mee via Flyway)
+createdb pokepack
+
+# 2. Backend
+cd backend
+mvn spring-boot:run    # draait op :8080
+
+# 3. Frontend (nieuwe terminal)
 cd frontend
 npm install
-npm run dev
+npm run dev             # draait op :5173, praat met de backend op :8080
 ```
 
-Open daarna de URL die Vite toont (standaard http://localhost:5173). De flow: kies een pack →
-open 'm → kaarten worden één voor één onthuld, met de "hit"-kaart als climax-reveal.
+Zie `backend/README.md` voor de API-endpoints en `frontend/.env.example` als de backend niet op
+de standaard poort draait. Echte kaartdata ophalen i.p.v. de handmatige seed: zie
+`sync-job/README.md`.
 
 ## Volgende stappen
 
-Zie `docs/PROJECT_BRIEF.md` §2 en §7 voor de MVP-scope en het voorlopige datamodel. Backend
-(Spring Boot + Postgres + Redis), database-migraties en de sync-job tegen pokemontcg.io zijn de
-volgende bouwstenen, zodra de visuele richting van de mockup is afgestemd.
+Zie `docs/PROJECT_BRIEF.md` §2 en §7 voor de MVP-scope en het voorlopige datamodel. Nog te
+bouwen: auth, quests/achievements-endpoints, leaderboards, en eigen R2-hosting van
+kaartafbeeldingen (sync-job slaat nu nog de directe API-URL's op).

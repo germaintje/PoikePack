@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: pokepack-backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/pokepack
+    username: postgres
+    password: postgres
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema — Hibernate only validates that entities match it.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    # Migrations live in the monorepo's top-level database/ folder (see docs/PROJECT_BRIEF.md
+    # §6), not inside the backend module, so database/ stays the single source of truth for
+    # schema regardless of which service (backend, sync-job) touches the database.
+    locations: filesystem:../database/migrations
+
+server:
+  port: 8080
+
+pokepack:
+  starting-coins: 500
+  daily-bonus-coins: 25
+  duplicate-bonus-coins: 2
+  set-completion-bonus-coins: 500
+  jwt:
+    # Zet dit via een echte env var in productie — dit is een lokale-dev-default, geen geheim.
+    secret: "${POKEPACK_JWT_SECRET:pokepack-local-dev-secret-change-me-32-bytes-minimum-please}"
+    expiration-minutes: 10080 # 7 dagen
