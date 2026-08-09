@@ -7,6 +7,7 @@ public record AchievementStatusDto(
         String name,
         String description,
         int rewardCoins,
+        int rewardXp,
         boolean unlocked,
         Instant unlockedAt
 ) {

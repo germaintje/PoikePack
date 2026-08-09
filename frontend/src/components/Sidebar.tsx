@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePackStore } from '../store/usePackStore'
 import { PokeballIcon } from './PokeballIcon'
+import { levelProgress } from '../lib/levelCurve'
 import type { View } from '../store/usePackStore'
 
 const NAV_ITEMS: { key: View; label: string; icon: string }[] = [
@@ -18,7 +19,9 @@ function SidebarContents({ onNavigate }: { onNavigate?: () => void }) {
   const name = usePackStore((s) => s.name)
   const avatarEmoji = usePackStore((s) => s.avatarEmoji)
   const playerLevel = usePackStore((s) => s.playerLevel)
+  const xp = usePackStore((s) => s.xp)
   const logout = usePackStore((s) => s.logout)
+  const progress = levelProgress(xp, playerLevel)
 
   const go = (key: View) => {
     if (key === 'packs') reset()
@@ -73,6 +76,14 @@ function SidebarContents({ onNavigate }: { onNavigate?: () => void }) {
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold text-white">{name || 'Trainer'}</span>
           <span className="block text-xs text-white/40">Level {playerLevel}</span>
+          <span className="mt-1.5 block h-1 w-full overflow-hidden rounded-full bg-white/10">
+            <motion.span
+              className="block h-full rounded-full bg-gradient-to-r from-red-400 to-violet-400"
+              initial={false}
+              animate={{ width: `${progress.pct}%` }}
+              transition={{ duration: 0.5 }}
+            />
+          </span>
         </span>
       </button>
 

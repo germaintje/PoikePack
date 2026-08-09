@@ -25,6 +25,9 @@ public class Achievement {
     @Column(name = "reward_coins", nullable = false)
     private int rewardCoins;
 
+    @Column(name = "reward_xp", nullable = false)
+    private int rewardXp;
+
     protected Achievement() {
         // JPA
     }
@@ -51,5 +54,9 @@ public class Achievement {
 
     public int getRewardCoins() {
         return rewardCoins;
+    }
+
+    public int getRewardXp() {
+        return rewardXp;
     }
 }

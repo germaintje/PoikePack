@@ -68,6 +68,7 @@ public class QuestService {
             if (progress.getProgress() >= quest.getTargetCount()) {
                 progress.markCompleted();
                 user.setCoins(user.getCoins() + quest.getRewardCoins());
+                user.addXp(quest.getRewardXp());
                 transactionRepository.save(new Transaction(user, TransactionType.QUEST_REWARD,
                         quest.getRewardCoins(), "Quest voltooid: " + quest.getName()));
                 userStatsService.recordCoinsEarned(user.getId(), quest.getRewardCoins());
@@ -97,7 +98,7 @@ public class QuestService {
                     .orElse(null);
             return new QuestStatusDto(
                     quest.getCode(), quest.getName(), quest.getDescription(), quest.getPeriod(),
-                    quest.getTargetCount(), quest.getRewardCoins(),
+                    quest.getTargetCount(), quest.getRewardCoins(), quest.getRewardXp(),
                     progress != null ? progress.getProgress() : 0,
                     progress != null && progress.isCompleted()
             );

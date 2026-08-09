@@ -1,5 +1,6 @@
 package com.pokepack.user.dto;
 
+import com.pokepack.user.LevelCurve;
 import com.pokepack.user.User;
 
 public record UserDto(
@@ -8,10 +9,18 @@ public record UserDto(
         String email,
         long coins,
         int level,
+        long xp,
+        long xpForCurrentLevel,
+        long xpForNextLevel,
         String avatarEmoji,
         String bio
 ) {
     public static UserDto from(User u) {
-        return new UserDto(u.getId(), u.getName(), u.getEmail(), u.getCoins(), u.getLevel(), u.getAvatarEmoji(), u.getBio());
+        int level = u.getLevel();
+        return new UserDto(
+                u.getId(), u.getName(), u.getEmail(), u.getCoins(), level, u.getXp(),
+                LevelCurve.xpRequiredForLevel(level), LevelCurve.xpRequiredForLevel(level + 1),
+                u.getAvatarEmoji(), u.getBio()
+        );
     }
 }

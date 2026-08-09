@@ -39,13 +39,20 @@ export function SummaryScreen() {
         </p>
       </motion.div>
 
-      {(lastOpenExtras.setCompletionBonusCoins || lastOpenExtras.unlockedAchievementNames.length > 0) && (
+      {(lastOpenExtras.setCompletionBonusCoins ||
+        lastOpenExtras.unlockedAchievementNames.length > 0 ||
+        lastOpenExtras.leveledUpTo) && (
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
           className="mt-4 flex flex-col items-center gap-1.5"
         >
+          {lastOpenExtras.leveledUpTo && (
+            <p className="rounded-full bg-violet-400/15 px-4 py-1.5 text-sm font-semibold text-violet-300 ring-1 ring-violet-400/25">
+              ⬆️ Level {lastOpenExtras.leveledUpTo} bereikt!
+            </p>
+          )}
           {lastOpenExtras.setCompletionBonusCoins && (
             <p className="rounded-full bg-emerald-400/15 px-4 py-1.5 text-sm font-semibold text-emerald-300 ring-1 ring-emerald-400/25">
               ✨ Set compleet! +{lastOpenExtras.setCompletionBonusCoins} 🪙

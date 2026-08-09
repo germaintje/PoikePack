@@ -29,6 +29,9 @@ public class Quest {
     @Column(name = "reward_coins", nullable = false)
     private int rewardCoins;
 
+    @Column(name = "reward_xp", nullable = false)
+    private int rewardXp;
+
     @Column(nullable = false)
     private boolean active = true;
 
@@ -62,6 +65,10 @@ public class Quest {
 
     public int getRewardCoins() {
         return rewardCoins;
+    }
+
+    public int getRewardXp() {
+        return rewardXp;
     }
 
     public boolean isActive() {

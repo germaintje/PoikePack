@@ -37,6 +37,7 @@ export function QuestsScreen() {
                       {q.completed ? 'Voltooid' : q.period}
                     </span>
                     <p className="mt-1 text-xs font-mono text-amber-300">+{q.rewardCoins} 🪙</p>
+                    <p className="text-[11px] font-mono text-violet-300">+{q.rewardXp} XP</p>
                   </div>
                 </div>
                 <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
@@ -77,7 +78,10 @@ export function QuestsScreen() {
                   </p>
                   <p className="text-xs text-white/50">{a.description}</p>
                 </div>
-                <span className="whitespace-nowrap text-xs font-mono text-amber-300">+{a.rewardCoins} 🪙</span>
+                <span className="whitespace-nowrap text-right text-xs font-mono text-amber-300">
+                  +{a.rewardCoins} 🪙
+                  <span className="block text-[11px] text-violet-300">+{a.rewardXp} XP</span>
+                </span>
               </div>
             </div>
           ))}

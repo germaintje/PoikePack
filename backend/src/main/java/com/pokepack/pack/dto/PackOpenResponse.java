@@ -8,6 +8,9 @@ public record PackOpenResponse(
         long coinsBalance,
         List<PulledCardDto> cards,
         Integer setCompletionBonusCoins, // null als er geen set voltooid is met deze pack
-        List<String> unlockedAchievementNames
+        List<String> unlockedAchievementNames,
+        int playerLevel,
+        long xp,
+        long xpForNextLevel
 ) {
 }

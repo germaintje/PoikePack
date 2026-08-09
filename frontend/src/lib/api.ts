@@ -50,6 +50,9 @@ export interface BackendUser {
   email: string
   coins: number
   level: number
+  xp: number
+  xpForCurrentLevel: number
+  xpForNextLevel: number
   avatarEmoji: string
   bio: string | null
 }
@@ -105,6 +108,9 @@ export interface BackendPackOpenResponse {
   cards: BackendPulledCard[]
   setCompletionBonusCoins: number | null
   unlockedAchievementNames: string[]
+  playerLevel: number
+  xp: number
+  xpForNextLevel: number
 }
 
 export interface BackendBinderEntry {
@@ -146,6 +152,7 @@ export interface BackendQuestStatus {
   period: string
   targetCount: number
   rewardCoins: number
+  rewardXp: number
   progress: number
   completed: boolean
 }
@@ -155,6 +162,7 @@ export interface BackendAchievementStatus {
   name: string
   description: string
   rewardCoins: number
+  rewardXp: number
   unlocked: boolean
   unlockedAt: string | null
 }

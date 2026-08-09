@@ -17,6 +17,7 @@ import com.pokepack.pack.exception.InsufficientCoinsException;
 import com.pokepack.pack.exception.PackLockedException;
 import com.pokepack.pack.exception.PackTypeNotFoundException;
 import com.pokepack.quest.QuestService;
+import com.pokepack.user.LevelCurve;
 import com.pokepack.user.User;
 import com.pokepack.user.UserRepository;
 import com.pokepack.user.UserStatsService;
@@ -50,6 +51,8 @@ public class PackOpeningService {
     private final UserStatsService userStatsService;
     private final PackDrawer packDrawer;
     private final int setCompletionBonusCoins;
+    private final int packOpenXp;
+    private final int newCardXp;
 
     public PackOpeningService(
             UserRepository userRepository,
@@ -61,7 +64,9 @@ public class PackOpeningService {
             QuestService questService,
             AchievementService achievementService,
             UserStatsService userStatsService,
-            @Value("${pokepack.set-completion-bonus-coins:500}") int setCompletionBonusCoins
+            @Value("${pokepack.set-completion-bonus-coins:500}") int setCompletionBonusCoins,
+            @Value("${pokepack.pack-open-xp:20}") int packOpenXp,
+            @Value("${pokepack.new-card-xp:8}") int newCardXp
     ) {
         this.userRepository = userRepository;
         this.packTypeRepository = packTypeRepository;
@@ -73,6 +78,8 @@ public class PackOpeningService {
         this.achievementService = achievementService;
         this.userStatsService = userStatsService;
         this.setCompletionBonusCoins = setCompletionBonusCoins;
+        this.packOpenXp = packOpenXp;
+        this.newCardXp = newCardXp;
         this.packDrawer = new PackDrawer();
     }
 
@@ -102,6 +109,7 @@ public class PackOpeningService {
         List<PulledCard> pulls = packDrawer.draw(commons, uncommons, hits, SlotCounts.of(packType));
 
         user.setCoins(user.getCoins() - packType.getPrice());
+        user.addXp(packOpenXp);
         transactionRepository.save(new Transaction(user, TransactionType.PACK_OPEN,
                 -packType.getPrice(), "Open " + packType.getName()));
         userStatsService.recordPackOpened(userId);
@@ -139,6 +147,7 @@ public class PackOpeningService {
                 userStatsService.recordCoinsEarned(userId, CardValuation.DUPLICATE_BONUS);
             } else {
                 userStatsService.recordCardCollected(userId);
+                user.addXp(newCardXp);
             }
 
             dtos.add(new PulledCardDto(
@@ -167,7 +176,8 @@ public class PackOpeningService {
         return new PackOpenResponse(
                 opening.getId(), packType.getPrice(), user.getCoins(), dtos,
                 awardedSetCompletionBonus,
-                unlockedAchievements.stream().map(Achievement::getName).toList()
+                unlockedAchievements.stream().map(Achievement::getName).toList(),
+                user.getLevel(), user.getXp(), LevelCurve.xpRequiredForLevel(user.getLevel() + 1)
         );
     }
 

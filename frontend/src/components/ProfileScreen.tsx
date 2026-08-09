@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { usePackStore } from '../store/usePackStore'
+import { levelProgress } from '../lib/levelCurve'
 
 const AVATAR_OPTIONS = ['🧑', '🔥', '💧', '🌿', '⚡', '🌙', '⭐', '🎴', '🐉', '👑', '🦊', '🐢']
 
@@ -50,6 +51,8 @@ export function ProfileScreen() {
     month: 'long',
     year: 'numeric',
   })
+
+  const progress = levelProgress(profile.xp, profile.level)
 
   return (
     <div className="mx-auto w-full max-w-3xl px-5 pb-16 sm:px-8">
@@ -101,6 +104,19 @@ export function ProfileScreen() {
               <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/50 ring-1 ring-white/10">
                 Trainer sinds {createdAt}
               </span>
+            </div>
+            <div className="mt-3 mx-auto max-w-xs sm:mx-0">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                <motion.div
+                  className="h-full rounded-full bg-gradient-to-r from-red-400 to-violet-400"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress.pct}%` }}
+                  transition={{ duration: 0.6 }}
+                />
+              </div>
+              <p className="mt-1 text-[11px] text-white/35">
+                {progress.current} / {progress.span} XP naar level {profile.level + 1}
+              </p>
             </div>
           </div>
 

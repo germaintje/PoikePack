@@ -177,6 +177,41 @@ class PackOpeningServiceIntegrationTest {
     }
 
     @Test
+    void openingAPackAwardsAtLeastTheBasePackOpenXp() {
+        // Ondergrens i.p.v. exacte waarde: hoeveel extra XP erbovenop komt hangt af van hoeveel
+        // van de 9 pulls nieuw zijn (RNG) en of de first_holo-achievement al triggert.
+        PackOpenResponse response = packOpeningService.openPack(user.getId(), packType.getId());
+
+        assertThat(response.xp()).isGreaterThanOrEqualTo(20);
+        assertThat(response.playerLevel()).isGreaterThanOrEqualTo(1);
+
+        User reloaded = userRepository.findById(user.getId()).orElseThrow();
+        assertThat(reloaded.getXp()).isEqualTo(response.xp());
+        assertThat(reloaded.getLevel()).isEqualTo(response.playerLevel());
+    }
+
+    @Test
+    void openingEnoughPacksLevelsUpThePlayerToUnlockThe151Pack() {
+        // Elke pack-opening geeft minstens de vaste pack-open-XP (20), los van RNG (nieuwe
+        // kaarten/quests/achievements geven extra XP bovenop). 60 packs * 20 = 1200 XP, ruim
+        // boven de 1000 XP die nodig is voor level 5 — dus deterministisch, geen RNG-afhankelijkheid.
+        user.setCoins(20_000);
+        userRepository.save(user);
+
+        PackOpenResponse last = null;
+        for (int i = 0; i < 60; i++) {
+            last = packOpeningService.openPack(user.getId(), packType.getId());
+        }
+
+        assertThat(last.playerLevel()).isGreaterThanOrEqualTo(5);
+        assertThat(last.xp()).isGreaterThanOrEqualTo(1000);
+
+        User reloaded = userRepository.findById(user.getId()).orElseThrow();
+        assertThat(reloaded.getLevel()).isEqualTo(last.playerLevel());
+        assertThat(reloaded.getXp()).isEqualTo(last.xp());
+    }
+
+    @Test
     void openingTenPacksUnlocksThePacksOpenedAchievement() {
         user.setCoins(10_000); // ruim genoeg voor 10 packs + eventuele duplicate-bonussen
         userRepository.save(user);

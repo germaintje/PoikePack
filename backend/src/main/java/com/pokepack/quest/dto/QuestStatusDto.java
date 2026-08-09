@@ -7,6 +7,7 @@ public record QuestStatusDto(
         String period,
         int targetCount,
         int rewardCoins,
+        int rewardXp,
         int progress,
         boolean completed
 ) {

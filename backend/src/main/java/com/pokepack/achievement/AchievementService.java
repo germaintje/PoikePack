@@ -67,6 +67,7 @@ public class AchievementService {
             if (met) {
                 userAchievementRepository.save(new UserAchievement(user, ach));
                 user.setCoins(user.getCoins() + ach.getRewardCoins());
+                user.addXp(ach.getRewardXp());
                 transactionRepository.save(new Transaction(user, TransactionType.ACHIEVEMENT_REWARD,
                         ach.getRewardCoins(), "Achievement: " + ach.getName()));
                 userStatsService.recordCoinsEarned(user.getId(), ach.getRewardCoins());
@@ -85,7 +86,7 @@ public class AchievementService {
                 .map(ach -> {
                     UserAchievement ua = unlockedByAchievementId.get(ach.getId());
                     return new AchievementStatusDto(
-                            ach.getCode(), ach.getName(), ach.getDescription(), ach.getRewardCoins(),
+                            ach.getCode(), ach.getName(), ach.getDescription(), ach.getRewardCoins(), ach.getRewardXp(),
                             ua != null, ua != null ? ua.getUnlockedAt() : null
                     );
                 })

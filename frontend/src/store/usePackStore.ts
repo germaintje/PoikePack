@@ -20,6 +20,7 @@ type AuthFormMode = 'login' | 'register'
 interface LastOpenExtras {
   setCompletionBonusCoins: number | null
   unlockedAchievementNames: string[]
+  leveledUpTo: number | null
 }
 
 interface PackState {
@@ -33,6 +34,9 @@ interface PackState {
   email: string
   coins: number
   playerLevel: number
+  xp: number
+  xpForCurrentLevel: number
+  xpForNextLevel: number
   avatarEmoji: string
   bio: string | null
 
@@ -97,13 +101,27 @@ async function refreshBinder(): Promise<Record<string, number>> {
   return owned
 }
 
-function applyUser(user: { id: number; name: string; email: string; coins: number; level: number; avatarEmoji: string; bio: string | null }) {
+function applyUser(user: {
+  id: number
+  name: string
+  email: string
+  coins: number
+  level: number
+  xp: number
+  xpForCurrentLevel: number
+  xpForNextLevel: number
+  avatarEmoji: string
+  bio: string | null
+}) {
   return {
     userId: user.id,
     name: user.name,
     email: user.email,
     coins: user.coins,
     playerLevel: user.level,
+    xp: user.xp,
+    xpForCurrentLevel: user.xpForCurrentLevel,
+    xpForNextLevel: user.xpForNextLevel,
     avatarEmoji: user.avatarEmoji,
     bio: user.bio,
   }
@@ -135,6 +153,9 @@ export const usePackStore = create<PackState>((set, get) => ({
   email: '',
   coins: 0,
   playerLevel: 1,
+  xp: 0,
+  xpForCurrentLevel: 0,
+  xpForNextLevel: 100,
   avatarEmoji: '🧑',
   bio: null,
 
@@ -147,7 +168,7 @@ export const usePackStore = create<PackState>((set, get) => ({
   selectedPack: null,
   pulls: [],
   revealedCount: 0,
-  lastOpenExtras: { setCompletionBonusCoins: null, unlockedAchievementNames: [] },
+  lastOpenExtras: { setCompletionBonusCoins: null, unlockedAchievementNames: [], leveledUpTo: null },
 
   packTypes: [],
   packsStatus: 'idle',
@@ -228,6 +249,9 @@ export const usePackStore = create<PackState>((set, get) => ({
       email: '',
       coins: 0,
       playerLevel: 1,
+      xp: 0,
+      xpForCurrentLevel: 0,
+      xpForNextLevel: 100,
       avatarEmoji: '🧑',
       bio: null,
       profile: null,
@@ -277,7 +301,7 @@ export const usePackStore = create<PackState>((set, get) => ({
   selectPack: (pack) => set({ selectedPack: pack, actionError: null }),
 
   openPack: async () => {
-    const { selectedPack, coins } = get()
+    const { selectedPack, coins, playerLevel } = get()
     if (!selectedPack) return
     if (coins < selectedPack.price) {
       set({ actionError: 'Te weinig coins voor deze pack.' })
@@ -291,11 +315,15 @@ export const usePackStore = create<PackState>((set, get) => ({
         pulls,
         revealedCount: 0,
         coins: response.coinsBalance,
+        playerLevel: response.playerLevel,
+        xp: response.xp,
+        xpForNextLevel: response.xpForNextLevel,
         stage: 'opening',
         actionError: null,
         lastOpenExtras: {
           setCompletionBonusCoins: response.setCompletionBonusCoins,
           unlockedAchievementNames: response.unlockedAchievementNames,
+          leveledUpTo: response.playerLevel > playerLevel ? response.playerLevel : null,
         },
       })
       // Binder op de achtergrond verversen — hoeft de reveal-flow niet te blokkeren.

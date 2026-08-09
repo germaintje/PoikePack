@@ -37,6 +37,9 @@ public class User {
     @Column(nullable = false)
     private int level = 1;
 
+    @Column(nullable = false)
+    private long xp = 0;
+
     @Column(name = "daily_streak", nullable = false)
     private int dailyStreak = 0;
 
@@ -116,6 +119,18 @@ public class User {
 
     public int getLevel() {
         return level;
+    }
+
+    public long getXp() {
+        return xp;
+    }
+
+    /** Enige manier om XP toe te kennen — herberekent het level meteen mee via LevelCurve, zodat
+     * xp en level nooit uit sync kunnen raken. */
+    public void addXp(long amount) {
+        if (amount <= 0) return;
+        this.xp += amount;
+        this.level = LevelCurve.levelForXp(this.xp);
     }
 
     public int getDailyStreak() {

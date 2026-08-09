@@ -30,6 +30,8 @@ pokepack:
   daily-bonus-coins: 25
   duplicate-bonus-coins: 2
   set-completion-bonus-coins: 500
+  pack-open-xp: 20
+  new-card-xp: 8
   jwt:
     # Zet dit via een echte env var in productie — dit is een lokale-dev-default, geen geheim.
     secret: "${POKEPACK_JWT_SECRET:pokepack-local-dev-secret-change-me-32-bytes-minimum-please}"
