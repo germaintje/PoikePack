@@ -43,6 +43,12 @@ export interface ApiCardPrices {
   [priceVariant: string]: unknown
 }
 
+export interface ApiAbility {
+  name: string
+  text?: string
+  type?: string // "Ability" of "Pokémon Power" (oudere kaarten)
+}
+
 export interface ApiCard {
   id: string
   name: string
@@ -55,6 +61,7 @@ export interface ApiCard {
   evolvesFrom?: string
   evolvesTo?: string[]
   rules?: string[]
+  abilities?: ApiAbility[]
   attacks?: ApiAttack[]
   weaknesses?: ApiWeaknessOrResistance[]
   resistances?: ApiWeaknessOrResistance[]

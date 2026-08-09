@@ -66,8 +66,8 @@ export async function upsertCard(pool: pg.Pool, setId: string, card: ApiCard): P
   await pool.query(
     `insert into cards (
        id, set_id, name, number, rarity, primary_type, image_small_url, image_large_url,
-       supertype, subtypes, hp, types, evolves_from, evolves_to, rules, attacks, weaknesses,
-       resistances, retreat_cost, converted_retreat_cost, artist, flavor_text,
+       supertype, subtypes, hp, types, evolves_from, evolves_to, rules, abilities, attacks,
+       weaknesses, resistances, retreat_cost, converted_retreat_cost, artist, flavor_text,
        national_pokedex_numbers, legalities, regulation_mark,
        tcgplayer_url, tcgplayer_prices, cardmarket_url, cardmarket_prices,
        source_updated_at, synced_at
@@ -78,7 +78,7 @@ export async function upsertCard(pool: pg.Pool, setId: string, card: ApiCard): P
        $18, $19, $20, $21, $22,
        $23, $24, $25,
        $26, $27, $28, $29,
-       $30, now()
+       $30, $31, now()
      )
      on conflict (id) do update set
        name = excluded.name,
@@ -94,6 +94,7 @@ export async function upsertCard(pool: pg.Pool, setId: string, card: ApiCard): P
        evolves_from = excluded.evolves_from,
        evolves_to = excluded.evolves_to,
        rules = excluded.rules,
+       abilities = excluded.abilities,
        attacks = excluded.attacks,
        weaknesses = excluded.weaknesses,
        resistances = excluded.resistances,
@@ -126,6 +127,7 @@ export async function upsertCard(pool: pg.Pool, setId: string, card: ApiCard): P
       card.evolvesFrom ?? null,
       toJson(card.evolvesTo),
       toJson(card.rules),
+      toJson(card.abilities),
       toJson(card.attacks),
       toJson(card.weaknesses),
       toJson(card.resistances),
