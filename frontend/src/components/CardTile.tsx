@@ -7,9 +7,11 @@ interface CardTileProps {
   size?: 'sm' | 'lg'
   isDuplicate?: boolean
   isClimax?: boolean
+  /** Aantal exemplaren in bezit. Toont een "×N"-badge i.p.v. "Dupe" als > 1. */
+  quantity?: number
 }
 
-export function CardTile({ card, size = 'sm', isDuplicate, isClimax }: CardTileProps) {
+export function CardTile({ card, size = 'sm', isDuplicate, isClimax, quantity }: CardTileProps) {
   const style = getRarityStyle(card.rarity)
   const dims = size === 'lg' ? 'w-56 h-80 sm:w-64 sm:h-[23rem]' : 'w-24 h-36'
   const glowColor = card.colorFrom ?? '#ffd166'
@@ -68,10 +70,16 @@ export function CardTile({ card, size = 'sm', isDuplicate, isClimax }: CardTileP
           >
             {card.rarity}
           </span>
-          {isDuplicate && (
+          {quantity && quantity > 1 ? (
             <span className="rounded-full bg-black/40 px-1.5 py-0.5 text-[8px] font-semibold text-white/80">
-              Dupe
+              ×{quantity}
             </span>
+          ) : (
+            isDuplicate && (
+              <span className="rounded-full bg-black/40 px-1.5 py-0.5 text-[8px] font-semibold text-white/80">
+                Dupe
+              </span>
+            )
           )}
         </div>
 
@@ -94,6 +102,19 @@ export function CardTile({ card, size = 'sm', isDuplicate, isClimax }: CardTileP
             </p>
           )}
         </div>
+      </div>
+    </div>
+  )
+}
+
+export function LockedCardTile({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
+  const dims = size === 'lg' ? 'w-56 h-80 sm:w-64 sm:h-[23rem]' : 'w-24 h-36'
+  return (
+    <div
+      className={`relative ${dims} rounded-xl ring-1 ring-white/5 overflow-hidden bg-white/[0.03]`}
+    >
+      <div className="flex h-full items-center justify-center">
+        <span className="text-2xl text-white/15">?</span>
       </div>
     </div>
   )

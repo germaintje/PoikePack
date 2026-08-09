@@ -2,12 +2,12 @@ import { motion } from 'framer-motion'
 import { usePackStore } from '../store/usePackStore'
 import type { PackType } from '../lib/types'
 
-const PLAYER_LEVEL = 4
-
 export function PackSelectScreen() {
   const coins = usePackStore((s) => s.coins)
+  const playerLevel = usePackStore((s) => s.playerLevel)
   const packTypes = usePackStore((s) => s.packTypes)
-  const liveStatus = usePackStore((s) => s.liveStatus)
+  const packsStatus = usePackStore((s) => s.packsStatus)
+  const actionError = usePackStore((s) => s.actionError)
   const selectPack = usePackStore((s) => s.selectPack)
   const openPack = usePackStore((s) => s.openPack)
 
@@ -23,19 +23,20 @@ export function PackSelectScreen() {
         <p className="mt-1 text-sm text-white/50">
           Verdien coins door te spelen en unlock nieuwe sets naarmate je level stijgt.
         </p>
-        {liveStatus === 'loading' && (
-          <p className="mt-2 text-xs text-violet-300/80">Live kaartdata laden van de Pokémon TCG API…</p>
+        {packsStatus === 'loading' && (
+          <p className="mt-2 text-xs text-violet-300/80">Packs laden…</p>
         )}
-        {liveStatus === 'error' && (
+        {packsStatus === 'ready' && packTypes.length === 0 && (
           <p className="mt-2 text-xs text-amber-300/80">
-            Kon geen live kaartdata laden — voorbeelddata getoond.
+            Nog geen packs beschikbaar — is de database geseed? (zie database/migrations)
           </p>
         )}
+        {actionError && <p className="mt-2 text-xs text-rose-300/90">{actionError}</p>}
       </div>
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         {packTypes.map((pack, i) => {
-          const locked = PLAYER_LEVEL < pack.unlockLevel
+          const locked = playerLevel < pack.unlockLevel
           const canAfford = coins >= pack.price
 
           return (

@@ -9,7 +9,7 @@ export interface CardData {
   setName: string
   number: string
   rarity: Rarity
-  type: string
+  type?: string
   sellValue: number
   /** Echte kaartfoto (uit de Pokémon TCG API). Ontbreekt bij placeholder-kaarten. */
   image?: string
@@ -28,6 +28,7 @@ export interface SlotConfig {
 
 export interface PackType {
   id: string
+  setId: string
   name: string
   setName: string
   price: number
