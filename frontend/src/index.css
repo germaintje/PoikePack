@@ -9,3 +9,132 @@ body {
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   background: #0a0812;
 }
+
+/*
+ * Licht thema. De app is van huis uit donker gestyled (white/NN-opacity tokens op een bijna-
+ * zwarte canvas) — in plaats van elk component individueel te herschrijven naar een los
+ * design-tokensysteem, herdefiniëren we hier de bestaande white/black-opacity utility-klassen
+ * zélf zodra <html> de "light"-klasse draagt (gezet door useTheme.ts). Specificiteit
+ * (.light .klasse = 2 klassen) wint automatisch van Tailwinds eigen 1-klasse utilities, dus dit
+ * werkt overal in de app zonder dat een enkel component hoeft te weten welk thema actief is.
+ */
+html.light {
+  color-scheme: light;
+}
+
+html.light body {
+  background: #f6f4fb;
+}
+
+.light .text-white {
+  color: #1b1330;
+}
+.light .text-white\/15 {
+  color: rgb(27 19 48 / 0.55);
+}
+.light .text-white\/25 {
+  color: rgb(27 19 48 / 0.58);
+}
+.light .text-white\/30 {
+  color: rgb(27 19 48 / 0.6);
+}
+.light .text-white\/35 {
+  color: rgb(27 19 48 / 0.63);
+}
+.light .text-white\/40 {
+  color: rgb(27 19 48 / 0.65);
+}
+.light .text-white\/45 {
+  color: rgb(27 19 48 / 0.68);
+}
+.light .text-white\/50 {
+  color: rgb(27 19 48 / 0.7);
+}
+.light .text-white\/55 {
+  color: rgb(27 19 48 / 0.72);
+}
+.light .text-white\/60 {
+  color: rgb(27 19 48 / 0.74);
+}
+.light .text-white\/70 {
+  color: rgb(27 19 48 / 0.78);
+}
+.light .text-white\/80 {
+  color: rgb(27 19 48 / 0.82);
+}
+
+.light .bg-white\/5 {
+  background-color: rgb(27 19 48 / 0.04);
+}
+.light .bg-white\/10 {
+  background-color: rgb(27 19 48 / 0.05);
+}
+.light .bg-white\/15 {
+  background-color: rgb(27 19 48 / 0.07);
+}
+.light .bg-white\/20 {
+  background-color: rgb(27 19 48 / 0.09);
+}
+.light .bg-white\/70 {
+  background-color: rgb(27 19 48 / 0.7);
+}
+.light .bg-white\/\[0\.02\] {
+  background-color: rgb(27 19 48 / 0.02);
+}
+.light .bg-white\/\[0\.03\] {
+  background-color: rgb(27 19 48 / 0.03);
+}
+.light .bg-white\/\[0\.04\] {
+  background-color: rgb(27 19 48 / 0.04);
+}
+.light .bg-white\/\[0\.06\] {
+  background-color: rgb(27 19 48 / 0.05);
+}
+.light .bg-white\/\[0\.08\] {
+  background-color: rgb(27 19 48 / 0.07);
+}
+.light .via-white\/\[0\.03\] {
+  --tw-gradient-via: rgb(27 19 48 / 0.03);
+}
+
+.light .border-white\/10 {
+  border-color: rgb(27 19 48 / 0.1);
+}
+.light .border-white\/20 {
+  border-color: rgb(27 19 48 / 0.14);
+}
+.light .ring-white\/5 {
+  --tw-ring-color: rgb(27 19 48 / 0.05);
+}
+.light .ring-white\/10 {
+  --tw-ring-color: rgb(27 19 48 / 0.09);
+}
+.light .ring-white\/15 {
+  --tw-ring-color: rgb(27 19 48 / 0.12);
+}
+.light .ring-white\/20 {
+  --tw-ring-color: rgb(27 19 48 / 0.14);
+}
+.light .ring-white\/30 {
+  --tw-ring-color: rgb(27 19 48 / 0.18);
+}
+
+/* Unieke, hardgecodeerde panelen (niet de white/NN-opacity-vorm, dus los benoemd) */
+.light .bg-\[\#0a0812\] {
+  background-color: #f6f4fb;
+}
+.light .bg-\[\#0a0812\]\/80 {
+  background-color: rgb(246 244 251 / 0.85);
+}
+.light .bg-\[\#120e1e\] {
+  background-color: #ffffff;
+}
+.light .bg-\[\#151022\] {
+  background-color: #ffffff;
+}
+.light .bg-slate-800 {
+  background-color: #e2e0ea;
+}
+.light .dot-grid {
+  background-image: radial-gradient(circle, rgba(27, 19, 48, 0.9) 1px, transparent 1px) !important;
+}

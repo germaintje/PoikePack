@@ -10,8 +10,9 @@ function StatCard({ label, value, glyph, delay }: { label: string; value: string
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -3 }}
       transition={{ delay }}
-      className="rounded-2xl bg-white/[0.04] p-5 ring-1 ring-white/10"
+      className="rounded-2xl bg-white/[0.04] p-5 ring-1 ring-white/10 transition-shadow hover:bg-white/[0.06] hover:ring-white/20"
     >
       <div className="text-2xl">{glyph}</div>
       <div className="mt-2 font-mono text-2xl font-bold text-white">{value}</div>

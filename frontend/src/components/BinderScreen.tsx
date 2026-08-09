@@ -33,14 +33,29 @@ export function BinderScreen() {
   const totalOwned = sets.reduce((sum, s) => sum + s.ownedCount, 0)
   const totalCards = sets.reduce((sum, s) => sum + s.total, 0)
 
+  const overallProgress = totalCards > 0 ? Math.round((totalOwned / totalCards) * 100) : 0
+
   return (
     <div className="mx-auto w-full max-w-4xl px-5 pb-16 sm:px-8">
-      <div className="mb-6 mt-4 text-center">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8 mt-4 overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500/10 via-white/[0.03] to-red-500/10 p-6 text-center ring-1 ring-white/10"
+      >
         <h1 className="text-2xl font-bold text-white sm:text-3xl">Binder</h1>
         <p className="mt-1 text-sm text-white/50">
-          {totalOwned} van {totalCards} kaarten verzameld over alle sets.
+          {totalOwned.toLocaleString('nl-NL')} van {totalCards.toLocaleString('nl-NL')} kaarten verzameld over alle sets.
         </p>
-      </div>
+        <div className="mx-auto mt-4 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-white/10">
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-red-400 to-violet-400"
+            initial={{ width: 0 }}
+            animate={{ width: `${overallProgress}%` }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+          />
+        </div>
+        <p className="mt-1.5 text-xs font-mono text-white/40">{overallProgress}% compleet</p>
+      </motion.div>
 
       <div className="mb-8 flex flex-wrap items-center justify-center gap-2">
         <div className="flex items-center gap-1 rounded-full bg-white/5 p-1 ring-1 ring-white/10">
@@ -91,15 +106,27 @@ export function BinderScreen() {
           const progress = total > 0 ? Math.round((ownedCount / total) * 100) : 0
 
           return (
-            <div key={pack.id}>
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-white">{pack.setName}</h2>
-                  <p className="text-xs text-white/50">
-                    {ownedCount} van {total} compleet
-                  </p>
+            <motion.div
+              key={pack.id}
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '0px 0px -60px 0px' }}
+              transition={{ duration: 0.35 }}
+            >
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ background: `linear-gradient(135deg, ${pack.colorFrom}, ${pack.colorTo})` }}
+                  />
+                  <div className="min-w-0">
+                    <h2 className="truncate text-lg font-bold text-white">{pack.setName}</h2>
+                    <p className="text-xs text-white/50">
+                      {ownedCount} van {total} compleet
+                    </p>
+                  </div>
                 </div>
-                <span className="text-sm font-mono text-white/60">{progress}%</span>
+                <span className="shrink-0 text-sm font-mono text-white/60">{progress}%</span>
               </div>
               <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
                 <motion.div
@@ -125,7 +152,7 @@ export function BinderScreen() {
                   })}
                 </div>
               )}
-            </div>
+            </motion.div>
           )
         })}
       </div>

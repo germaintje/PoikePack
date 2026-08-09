@@ -8,6 +8,8 @@ const TABS: { key: LeaderboardType; label: string; unit: string }[] = [
   { key: 'complete-sets', label: 'Meeste complete sets', unit: 'sets' },
 ]
 
+const RANK_MEDALS: Record<number, string> = { 0: '🥇', 1: '🥈', 2: '🥉' }
+
 export function LeaderboardScreen() {
   const leaderboardType = usePackStore((s) => s.leaderboardType)
   const leaderboardEntries = usePackStore((s) => s.leaderboardEntries)
@@ -24,14 +26,14 @@ export function LeaderboardScreen() {
         <p className="mt-1 text-sm text-white/50">Hoe je het doet t.o.v. andere spelers.</p>
       </div>
 
-      <div className="mb-6 flex flex-wrap justify-center gap-2">
+      <div className="mb-6 flex flex-wrap justify-center gap-1 rounded-full bg-white/5 p-1 ring-1 ring-white/10 sm:inline-flex">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             type="button"
             onClick={() => loadLeaderboard(tab.key)}
             className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-              leaderboardType === tab.key ? 'bg-white text-black' : 'bg-white/5 text-white/60 hover:text-white'
+              leaderboardType === tab.key ? 'bg-white text-black' : 'text-white/60 hover:text-white'
             }`}
           >
             {tab.label}
@@ -39,22 +41,29 @@ export function LeaderboardScreen() {
         ))}
       </div>
 
-      {leaderboardStatus === 'loading' && <p className="text-center text-xs text-violet-300/80">Laden…</p>}
+      {leaderboardStatus === 'loading' && <p className="mt-4 text-center text-xs text-violet-300/80">Laden…</p>}
 
-      <div className="flex flex-col gap-1.5">
+      <div className="mt-4 flex flex-col gap-1.5">
         {leaderboardEntries.map((entry, i) => {
           const isMe = entry.userId === userId
+          const medal = RANK_MEDALS[i]
           return (
             <motion.div
               key={entry.userId}
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.03 }}
-              className={`flex items-center gap-3 rounded-xl px-4 py-2.5 ring-1 ${
-                isMe ? 'bg-violet-500/15 ring-violet-400/30' : 'bg-white/5 ring-white/10'
+              transition={{ delay: Math.min(i, 15) * 0.03 }}
+              className={`flex items-center gap-3 rounded-xl px-4 py-2.5 ring-1 transition ${
+                isMe
+                  ? 'bg-violet-500/15 ring-violet-400/30'
+                  : medal
+                    ? 'bg-amber-400/[0.06] ring-amber-300/20'
+                    : 'bg-white/5 ring-white/10 hover:bg-white/[0.07]'
               }`}
             >
-              <span className="w-6 text-center font-mono text-sm text-white/40">{i + 1}</span>
+              <span className="flex w-7 shrink-0 items-center justify-center text-center font-mono text-sm text-white/40">
+                {medal ?? i + 1}
+              </span>
               <span className="flex-1 truncate text-sm font-semibold text-white">
                 {entry.name}
                 {isMe && <span className="ml-1.5 text-xs text-violet-300">(jij)</span>}

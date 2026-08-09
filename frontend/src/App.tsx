@@ -32,7 +32,7 @@ function BackgroundGlow() {
         style={{ background: 'radial-gradient(circle, rgba(56,189,248,0.12), transparent 70%)' }}
       />
       <div
-        className="absolute inset-0 opacity-[0.035]"
+        className="dot-grid absolute inset-0 opacity-[0.035]"
         style={{
           backgroundImage:
             'radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)',

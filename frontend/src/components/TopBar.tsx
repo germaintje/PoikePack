@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { usePackStore } from '../store/usePackStore'
+import { useTheme } from '../lib/useTheme'
 import type { View } from '../store/usePackStore'
 
 const PAGE_TITLES: Record<View, string> = {
@@ -20,6 +21,7 @@ export function TopBar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   const dailyBonusStreak = usePackStore((s) => s.dailyBonusStreak)
   const dailyBonusCoinsAwarded = usePackStore((s) => s.dailyBonusCoinsAwarded)
   const claimDailyBonus = usePackStore((s) => s.claimDailyBonus)
+  const { theme, toggleTheme } = useTheme()
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-white/10 bg-[#0a0812]/80 px-5 py-3.5 backdrop-blur-lg sm:px-8">
@@ -74,6 +76,16 @@ export function TopBar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
             </motion.button>
           )}
         </AnimatePresence>
+
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/5 text-base ring-1 ring-white/10 transition hover:bg-white/10"
+          aria-label={theme === 'light' ? 'Donker thema' : 'Licht thema'}
+          title={theme === 'light' ? 'Donker thema' : 'Licht thema'}
+        >
+          {theme === 'light' ? '🌙' : '☀️'}
+        </button>
 
         <div className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 ring-1 ring-white/10">
           <span className="text-base">🪙</span>

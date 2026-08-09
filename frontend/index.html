@@ -5,6 +5,16 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PokePack</title>
+    <script>
+      // Blocking, vóór React mount: voorkomt een flits van het verkeerde thema bij laden.
+      (function () {
+        var stored = localStorage.getItem('pokepack_theme')
+        var theme = stored === 'light' || stored === 'dark'
+          ? stored
+          : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+        if (theme === 'light') document.documentElement.classList.add('light')
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
