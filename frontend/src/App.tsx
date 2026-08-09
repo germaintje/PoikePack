@@ -16,12 +16,30 @@ import { PokeballIcon } from './components/PokeballIcon'
 
 function BackgroundGlow() {
   return (
-    <div
-      className="pointer-events-none fixed inset-0 opacity-60"
-      style={{
-        background: 'radial-gradient(60% 50% at 50% 0%, rgba(124,58,237,0.18), transparent 70%)',
-      }}
-    />
+    <div className="pointer-events-none fixed inset-0 overflow-hidden">
+      <div
+        className="absolute inset-0 opacity-60"
+        style={{
+          background: 'radial-gradient(60% 50% at 50% 0%, rgba(124,58,237,0.2), transparent 70%)',
+        }}
+      />
+      <div
+        className="absolute -right-1/4 top-1/3 h-[60vh] w-[60vh] opacity-40"
+        style={{ background: 'radial-gradient(circle, rgba(239,68,68,0.16), transparent 70%)' }}
+      />
+      <div
+        className="absolute -left-1/4 bottom-0 h-[50vh] w-[50vh] opacity-30"
+        style={{ background: 'radial-gradient(circle, rgba(56,189,248,0.12), transparent 70%)' }}
+      />
+      <div
+        className="absolute inset-0 opacity-[0.035]"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)',
+          backgroundSize: '26px 26px',
+        }}
+      />
+    </div>
   )
 }
 
