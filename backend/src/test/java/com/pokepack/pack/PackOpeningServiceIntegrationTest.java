@@ -80,11 +80,16 @@ class PackOpeningServiceIntegrationTest {
         assertThat(response.cards()).hasSize(9); // 5 commons + 2 uncommons + 1 reverse holo + 1 hit
 
         // De hits-pool in deze test heeft maar 1 kaart, dus die valt hier altijd en de
-        // "first_holo"-achievement (+50) triggert dus altijd, deterministisch. Of de
+        // "first_holo"-achievement (+50) triggert dus altijd, deterministisch. Elke base-slot
+        // (5 commons, 2 uncommons) trekt zelf al gegarandeerd unieke kaarten, dus zelfs in het
+        // slechtste geval (reverse holo dupliceert een eerder getrokken slot) zijn er minstens
+        // 8 nieuwe kaarten — ruim boven de 3/6-drempel van de twee "verzamel N nieuwe
+        // kaarten"-dagelijkse quests, dus die vallen ook altijd. Samen met "open 1 pack" (ook
+        // altijd waar) is dat +105 coins bovenop de +50 van first_holo, deterministisch. Of de
         // reverse-holo-trek toevallig dezelfde kaart pakt als een van de 2 losse
         // uncommon-slots (en dus als duplicate telt, +2) hangt af van de RNG — vandaar de
         // ondergrens/bovengrens i.p.v. een exacte waarde.
-        long expectedMin = 500 - 100 + 50;
+        long expectedMin = 500 - 100 + 50 + 105;
         long expectedMax = expectedMin + 2;
         assertThat(response.coinsBalance()).isBetween(expectedMin, expectedMax);
         assertThat(response.unlockedAchievementNames()).contains("Eerste holo");
@@ -182,7 +187,7 @@ class PackOpeningServiceIntegrationTest {
         // van de 9 pulls nieuw zijn (RNG) en of de first_holo-achievement al triggert.
         PackOpenResponse response = packOpeningService.openPack(user.getId(), packType.getId());
 
-        assertThat(response.xp()).isGreaterThanOrEqualTo(20);
+        assertThat(response.xp()).isGreaterThanOrEqualTo(15);
         assertThat(response.playerLevel()).isGreaterThanOrEqualTo(1);
 
         User reloaded = userRepository.findById(user.getId()).orElseThrow();
@@ -191,20 +196,20 @@ class PackOpeningServiceIntegrationTest {
     }
 
     @Test
-    void openingEnoughPacksLevelsUpThePlayerToUnlockThe151Pack() {
-        // Elke pack-opening geeft minstens de vaste pack-open-XP (20), los van RNG (nieuwe
-        // kaarten/quests/achievements geven extra XP bovenop). 60 packs * 20 = 1200 XP, ruim
-        // boven de 1000 XP die nodig is voor level 5 — dus deterministisch, geen RNG-afhankelijkheid.
+    void openingEnoughPacksReachesLevelFive() {
+        // Elke pack-opening geeft minstens de vaste pack-open-XP (15), los van RNG (nieuwe
+        // kaarten/quests/achievements geven extra XP bovenop). 50 packs * 15 = 750 XP, ruim
+        // boven de 600 XP die nodig is voor level 5 — dus deterministisch, geen RNG-afhankelijkheid.
         user.setCoins(20_000);
         userRepository.save(user);
 
         PackOpenResponse last = null;
-        for (int i = 0; i < 60; i++) {
+        for (int i = 0; i < 50; i++) {
             last = packOpeningService.openPack(user.getId(), packType.getId());
         }
 
         assertThat(last.playerLevel()).isGreaterThanOrEqualTo(5);
-        assertThat(last.xp()).isGreaterThanOrEqualTo(1000);
+        assertThat(last.xp()).isGreaterThanOrEqualTo(600);
 
         User reloaded = userRepository.findById(user.getId()).orElseThrow();
         assertThat(reloaded.getLevel()).isEqualTo(last.playerLevel());

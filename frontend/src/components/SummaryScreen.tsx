@@ -37,10 +37,21 @@ export function SummaryScreen() {
           Beste pull: <span className="text-white/80">{bestPull?.name}</span> (
           {bestPull?.rarity})
         </p>
+        {lastOpenExtras.xpGained > 0 && (
+          <motion.p
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
+            className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-violet-400/15 px-4 py-1.5 text-sm font-bold text-violet-300 ring-1 ring-violet-400/25"
+          >
+            ✨ +{lastOpenExtras.xpGained} XP
+          </motion.p>
+        )}
       </motion.div>
 
       {(lastOpenExtras.setCompletionBonusCoins ||
         lastOpenExtras.unlockedAchievementNames.length > 0 ||
+        lastOpenExtras.completedQuestNames.length > 0 ||
         lastOpenExtras.leveledUpTo) && (
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -58,6 +69,14 @@ export function SummaryScreen() {
               ✨ Set compleet! +{lastOpenExtras.setCompletionBonusCoins} 🪙
             </p>
           )}
+          {lastOpenExtras.completedQuestNames.map((name) => (
+            <p
+              key={name}
+              className="rounded-full bg-sky-400/15 px-4 py-1.5 text-sm font-semibold text-sky-300 ring-1 ring-sky-400/25"
+            >
+              🎯 Missie voltooid: {name}
+            </p>
+          ))}
           {lastOpenExtras.unlockedAchievementNames.map((name) => (
             <p
               key={name}

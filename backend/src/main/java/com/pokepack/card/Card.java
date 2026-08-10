@@ -1,6 +1,7 @@
 package com.pokepack.card;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.Instant;
 
 /**
@@ -36,6 +37,12 @@ public class Card {
 
     @Column(name = "image_large_url", columnDefinition = "text")
     private String imageLargeUrl;
+
+    /** Echte marktwaarde (USD) van sync-job, afgeleid van tcgplayer/cardmarket-prijzen — null als
+     * de kaart nergens geprijsd staat. CardValuation gebruikt dit met de rarity-tier-waarden als
+     * fallback, zodat elke kaart altijd een verkoopwaarde heeft. */
+    @Column(name = "market_value_usd", precision = 10, scale = 2)
+    private BigDecimal marketValueUsd;
 
     @Column(name = "synced_at", nullable = false)
     private Instant syncedAt = Instant.now();
@@ -94,6 +101,14 @@ public class Card {
 
     public void setImageLargeUrl(String imageLargeUrl) {
         this.imageLargeUrl = imageLargeUrl;
+    }
+
+    public BigDecimal getMarketValueUsd() {
+        return marketValueUsd;
+    }
+
+    public void setMarketValueUsd(BigDecimal marketValueUsd) {
+        this.marketValueUsd = marketValueUsd;
     }
 
     /** Common/Uncommon zijn de enige rarities zonder holo-effect — zie lib/rarity.ts in frontend. */

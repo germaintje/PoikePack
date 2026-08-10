@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "sync": "tsx src/sync.ts",
-    "sync:all": "cross-env SYNC_ALL_SETS=true tsx src/sync.ts"
+    "sync:all": "cross-env SYNC_ALL_SETS=true tsx src/sync.ts",
+    "reprice": "tsx src/reprice.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.7",

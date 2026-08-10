@@ -1,6 +1,7 @@
 package com.pokepack.achievement;
 
 import com.pokepack.achievement.dto.AchievementStatusDto;
+import com.pokepack.binder.UserCard;
 import com.pokepack.binder.UserCardRepository;
 import com.pokepack.card.CardRepository;
 import com.pokepack.economy.Transaction;
@@ -8,6 +9,7 @@ import com.pokepack.economy.TransactionRepository;
 import com.pokepack.economy.TransactionType;
 import com.pokepack.pack.PackOpeningRepository;
 import com.pokepack.user.User;
+import com.pokepack.user.UserStats;
 import com.pokepack.user.UserStatsService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Data-driven i.p.v. een switch per losse achievement-code: elke achievement heeft een `metric`
+ * (en voor set_complete/set_holo_pulled een `set_id`) — checkAndAward berekent één keer per
+ * pack-opening de huidige waarde per metric, en toetst daar alle ~450 achievements tegen. Zie
+ * database/migrations/V11 voor waar die achievements vandaan komen.
+ */
 @Service
 public class AchievementService {
 
@@ -44,24 +52,59 @@ public class AchievementService {
         this.userStatsService = userStatsService;
     }
 
-    /** Checkt alle achievement-condities en kent nieuw-gehaalde meteen coins toe. Bedoeld om na
-     * elke pack-opening aangeroepen te worden (zie PackOpeningService). */
+    /** Checkt alle achievement-condities en kent nieuw-gehaalde meteen coins+xp toe. Bedoeld om
+     * na elke pack-opening aangeroepen te worden (zie PackOpeningService). */
     @Transactional
     public List<Achievement> checkAndAward(User user) {
-        long packsOpened = packOpeningRepository.countByUser_Id(user.getId());
-        boolean hasHolo = userCardRepository.hasAnyHoloOrBetter(user.getId());
-        long completeSets = countCompleteSets(user.getId());
+        Long userId = user.getId();
+
+        Set<Long> alreadyUnlockedIds = userAchievementRepository.findAllByUserId(userId).stream()
+                .map(ua -> ua.getAchievement().getId())
+                .collect(Collectors.toSet());
+
+        long packsOpened = packOpeningRepository.countByUser_Id(userId);
+        UserStats stats = userStatsService.getOrCreateStats(userId);
+
+        // Eén doorloop van alle bezeten kaarten geeft zowel per-set completion als per-set
+        // holo-bezit — voorkomt twee losse queries/doorlopen voor twee verschillende dingen.
+        Map<String, Set<String>> ownedCardIdsBySet = new HashMap<>();
+        Set<String> setsWithHoloOrBetter = new HashSet<>();
+        for (UserCard uc : userCardRepository.findAllByUserIdWithCardAndSet(userId)) {
+            String setId = uc.getCard().getSet().getId();
+            ownedCardIdsBySet.computeIfAbsent(setId, k -> new HashSet<>()).add(uc.getCard().getId());
+            if (!uc.getCard().isCommonOrUncommon()) {
+                setsWithHoloOrBetter.add(setId);
+            }
+        }
+        Set<String> completeSetIds = new HashSet<>();
+        for (var entry : ownedCardIdsBySet.entrySet()) {
+            long total = cardRepository.countBySetId(entry.getKey());
+            if (total > 0 && entry.getValue().size() >= total) completeSetIds.add(entry.getKey());
+        }
+
+        Map<String, Long> metricValues = Map.of(
+                "packs_opened", packsOpened,
+                "cards_collected", (long) stats.getCardsCollectedTotal(),
+                "coins_earned", stats.getCoinsEarnedTotal(),
+                "coins_spent", stats.getCoinsSpentTotal(),
+                "complete_sets", (long) completeSetIds.size(),
+                "level_reached", (long) user.getLevel(),
+                "daily_streak", (long) user.getDailyStreak()
+        );
+        boolean hasHoloAnywhere = !setsWithHoloOrBetter.isEmpty();
 
         List<Achievement> unlocked = new ArrayList<>();
         for (Achievement ach : achievementRepository.findAll()) {
-            if (userAchievementRepository.existsByUser_IdAndAchievement_Id(user.getId(), ach.getId())) continue;
+            if (alreadyUnlockedIds.contains(ach.getId())) continue;
 
-            boolean met = switch (ach.getCode()) {
-                case "first_holo" -> hasHolo;
-                case "first_complete_set" -> completeSets >= 1;
-                case "packs_opened_10" -> packsOpened >= 10;
-                case "packs_opened_100" -> packsOpened >= 100;
-                default -> false;
+            boolean met = switch (ach.getMetric()) {
+                case "first_holo" -> hasHoloAnywhere;
+                case "set_complete" -> ach.getSetId() != null && completeSetIds.contains(ach.getSetId());
+                case "set_holo_pulled" -> ach.getSetId() != null && setsWithHoloOrBetter.contains(ach.getSetId());
+                default -> {
+                    Long value = metricValues.get(ach.getMetric());
+                    yield value != null && value >= ach.getThreshold();
+                }
             };
 
             if (met) {
@@ -70,7 +113,7 @@ public class AchievementService {
                 user.addXp(ach.getRewardXp());
                 transactionRepository.save(new Transaction(user, TransactionType.ACHIEVEMENT_REWARD,
                         ach.getRewardCoins(), "Achievement: " + ach.getName()));
-                userStatsService.recordCoinsEarned(user.getId(), ach.getRewardCoins());
+                userStatsService.recordCoinsEarned(userId, ach.getRewardCoins());
                 unlocked.add(ach);
             }
         }
@@ -91,18 +134,5 @@ public class AchievementService {
                     );
                 })
                 .toList();
-    }
-
-    private long countCompleteSets(Long userId) {
-        Map<String, Set<String>> ownedCardIdsBySet = new HashMap<>();
-        for (var row : userCardRepository.findOwnedCardSetPairs(userId)) {
-            ownedCardIdsBySet.computeIfAbsent(row.getSetId(), k -> new HashSet<>()).add(row.getCardId());
-        }
-        long complete = 0;
-        for (var entry : ownedCardIdsBySet.entrySet()) {
-            long total = cardRepository.countBySetId(entry.getKey());
-            if (total > 0 && entry.getValue().size() >= total) complete++;
-        }
-        return complete;
     }
 }

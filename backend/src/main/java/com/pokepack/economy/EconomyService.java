@@ -80,7 +80,8 @@ public class EconomyService {
         for (UserCard uc : duplicates) {
             int extra = uc.getQuantity() - 1;
             if (extra <= 0) continue;
-            int valuePerCard = CardValuation.sellValueFor(uc.getCard().getRarity()) + CardValuation.DUPLICATE_BONUS;
+            int valuePerCard = CardValuation.sellValueFor(uc.getCard().getRarity(), uc.getCard().getMarketValueUsd())
+                    + CardValuation.DUPLICATE_BONUS;
             earned += (long) extra * valuePerCard;
             uc.setQuantity(1);
         }

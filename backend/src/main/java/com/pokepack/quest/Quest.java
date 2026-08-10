@@ -23,6 +23,11 @@ public class Quest {
     @Column(nullable = false, length = 20)
     private String period;
 
+    /** packs_opened, cards_collected, coins_earned, coins_spent — welke UserStats-teller deze
+     * quest voortgang geeft, zie QuestService.recordProgress. */
+    @Column(nullable = false, length = 30)
+    private String metric;
+
     @Column(name = "target_count", nullable = false)
     private int targetCount;
 
@@ -57,6 +62,10 @@ public class Quest {
 
     public String getPeriod() {
         return period;
+    }
+
+    public String getMetric() {
+        return metric;
     }
 
     public int getTargetCount() {

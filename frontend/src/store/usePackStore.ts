@@ -20,7 +20,9 @@ type AuthFormMode = 'login' | 'register'
 interface LastOpenExtras {
   setCompletionBonusCoins: number | null
   unlockedAchievementNames: string[]
+  completedQuestNames: string[]
   leveledUpTo: number | null
+  xpGained: number
 }
 
 interface PackState {
@@ -169,7 +171,13 @@ export const usePackStore = create<PackState>((set, get) => ({
   selectedPack: null,
   pulls: [],
   revealedCount: 0,
-  lastOpenExtras: { setCompletionBonusCoins: null, unlockedAchievementNames: [], leveledUpTo: null },
+  lastOpenExtras: {
+    setCompletionBonusCoins: null,
+    unlockedAchievementNames: [],
+    completedQuestNames: [],
+    leveledUpTo: null,
+    xpGained: 0,
+  },
 
   packTypes: [],
   packsStatus: 'idle',
@@ -326,7 +334,9 @@ export const usePackStore = create<PackState>((set, get) => ({
         lastOpenExtras: {
           setCompletionBonusCoins: response.setCompletionBonusCoins,
           unlockedAchievementNames: response.unlockedAchievementNames,
+          completedQuestNames: response.completedQuestNames,
           leveledUpTo: response.playerLevel > playerLevel ? response.playerLevel : null,
+          xpGained: response.xpGained,
         },
       })
       // Binder op de achtergrond verversen — hoeft de reveal-flow niet te blokkeren.

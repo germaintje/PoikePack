@@ -1,9 +1,16 @@
 package com.pokepack.economy;
 
+import java.math.BigDecimal;
+
 /**
- * Verkoopwaarde per rarity-tier. Zelfde tier-indeling en trefwoord-bucketing als
- * frontend/src/lib/rarity.ts, en dezelfde richtwaarden als docs/PROJECT_BRIEF.md §2.2
- * (Common=5, Uncommon=15, Rare=50, Holo/EX/V+=150+).
+ * Verkoopwaarde per kaart. Basis is de rarity-tier-tabel (zelfde tier-indeling en
+ * trefwoord-bucketing als frontend/src/lib/rarity.ts) — die blijft de vloer/fallback voor kaarten
+ * zonder marktdata. Heeft de kaart een echte marktwaarde (sync-job, tcgplayer/cardmarket), dan
+ * wint het hoogste van de twee: zo trekt een vintage holo die écht honderden euro's waard is de
+ * verkoopprijs omhoog, zonder de bestaande, al gebalanceerde tier-waarden ooit te laten zakken.
+ *
+ * SELL_FRACTION is bewust < 1: dupes verkopen geeft een deel van de marktwaarde, niet de volle
+ * mep — dat houdt "meer packs openen" aantrekkelijker dan "verkopen en wachten".
  */
 public final class CardValuation {
 
@@ -11,6 +18,17 @@ public final class CardValuation {
     }
 
     public static final int DUPLICATE_BONUS = 2;
+
+    private static final int COIN_PER_DOLLAR = 8; // zelfde koers als sync-job/src/reprice.ts
+    private static final double SELL_FRACTION = 0.4;
+
+    public static int sellValueFor(String rarity, BigDecimal marketValueUsd) {
+        int tierValue = sellValueFor(rarity);
+        if (marketValueUsd == null) return tierValue;
+
+        int marketValue = (int) Math.round(marketValueUsd.doubleValue() * COIN_PER_DOLLAR * SELL_FRACTION);
+        return Math.max(tierValue, marketValue);
+    }
 
     public static int sellValueFor(String rarity) {
         return switch (tierOf(rarity)) {

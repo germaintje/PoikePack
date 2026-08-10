@@ -9,14 +9,19 @@ class LevelCurveTest {
     @Test
     void startsAtLevelOneWithZeroXp() {
         assertThat(LevelCurve.levelForXp(0)).isEqualTo(1);
-        assertThat(LevelCurve.levelForXp(99)).isEqualTo(1);
+        assertThat(LevelCurve.levelForXp(59)).isEqualTo(1);
     }
 
     @Test
-    void levelFiveRequiresExactlyOneThousandXp() {
-        assertThat(LevelCurve.xpRequiredForLevel(5)).isEqualTo(1000);
-        assertThat(LevelCurve.levelForXp(999)).isEqualTo(4);
-        assertThat(LevelCurve.levelForXp(1000)).isEqualTo(5);
+    void levelFiveRequiresExactlySixHundredXp() {
+        assertThat(LevelCurve.xpRequiredForLevel(5)).isEqualTo(600);
+        assertThat(LevelCurve.levelForXp(599)).isEqualTo(4);
+        assertThat(LevelCurve.levelForXp(600)).isEqualTo(5);
+    }
+
+    @Test
+    void levelTwentyFiveRequiresEighteenThousandXp() {
+        assertThat(LevelCurve.xpRequiredForLevel(25)).isEqualTo(18_000);
     }
 
     @Test

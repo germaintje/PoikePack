@@ -65,7 +65,7 @@ public class PackOpeningService {
             AchievementService achievementService,
             UserStatsService userStatsService,
             @Value("${pokepack.set-completion-bonus-coins:500}") int setCompletionBonusCoins,
-            @Value("${pokepack.pack-open-xp:20}") int packOpenXp,
+            @Value("${pokepack.pack-open-xp:15}") int packOpenXp,
             @Value("${pokepack.new-card-xp:8}") int newCardXp
     ) {
         this.userRepository = userRepository;
@@ -108,6 +108,11 @@ public class PackOpeningService {
 
         List<PulledCard> pulls = packDrawer.draw(commons, uncommons, hits, SlotCounts.of(packType));
 
+        long xpBefore = user.getXp();
+        int levelBefore = user.getLevel();
+        int newCardCount = 0;
+        long coinsEarnedThisOpen = 0;
+
         user.setCoins(user.getCoins() - packType.getPrice());
         user.addXp(packOpenXp);
         transactionRepository.save(new Transaction(user, TransactionType.PACK_OPEN,
@@ -145,15 +150,17 @@ public class PackOpeningService {
                 transactionRepository.save(new Transaction(user, TransactionType.DUPLICATE_BONUS,
                         CardValuation.DUPLICATE_BONUS, "Duplicate: " + card.getName()));
                 userStatsService.recordCoinsEarned(userId, CardValuation.DUPLICATE_BONUS);
+                coinsEarnedThisOpen += CardValuation.DUPLICATE_BONUS;
             } else {
                 userStatsService.recordCardCollected(userId);
                 user.addXp(newCardXp);
+                newCardCount += 1;
             }
 
             dtos.add(new PulledCardDto(
                     card.getId(), card.getName(), card.getSet().getName(), card.getNumber(),
                     card.getRarity(), card.getImageLargeUrl(), pull.reverseHolo(), isDuplicate,
-                    CardValuation.sellValueFor(card.getRarity())
+                    CardValuation.sellValueFor(card.getRarity(), card.getMarketValueUsd())
             ));
         }
 
@@ -168,16 +175,27 @@ public class PackOpeningService {
                     setCompletionBonusCoins, "Set compleet: " + packType.getSet().getName()));
             userStatsService.recordCoinsEarned(userId, setCompletionBonusCoins);
             awardedSetCompletionBonus = setCompletionBonusCoins;
+            coinsEarnedThisOpen += setCompletionBonusCoins;
         }
 
-        questService.recordPackOpened(user);
+        Map<String, Integer> metricAmounts = Map.of(
+                "packs_opened", 1,
+                "cards_collected", newCardCount,
+                "coins_spent", packType.getPrice(),
+                "coins_earned", (int) Math.min(Integer.MAX_VALUE, coinsEarnedThisOpen),
+                "complete_sets", awardedSetCompletionBonus != null ? 1 : 0,
+                "level_reached", Math.max(0, user.getLevel() - levelBefore)
+        );
+        List<String> completedQuestNames = questService.recordProgress(user, metricAmounts);
         List<Achievement> unlockedAchievements = achievementService.checkAndAward(user);
 
         return new PackOpenResponse(
                 opening.getId(), packType.getPrice(), user.getCoins(), dtos,
                 awardedSetCompletionBonus,
                 unlockedAchievements.stream().map(Achievement::getName).toList(),
-                user.getLevel(), user.getXp(), LevelCurve.xpRequiredForLevel(user.getLevel() + 1)
+                completedQuestNames,
+                user.getLevel(), user.getXp(), user.getXp() - xpBefore,
+                LevelCurve.xpRequiredForLevel(user.getLevel() + 1)
         );
     }
 

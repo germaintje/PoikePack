@@ -27,6 +27,50 @@ function toIntOrNull(value: string | number | undefined): number | null {
   return Number.isFinite(n) ? n : null
 }
 
+// Eén marktwaarde-getal uit de rommelige prijs-blobs van de API. tcgplayer splitst per
+// druk-variant (normal/holofoil/reverseHolofoil/1stEditionHolofoil/...) — we pakken de hoogste
+// "market"-prijs die ergens voorkomt (de variant die iemand daadwerkelijk zou kopen/verkopen).
+// cardmarket is de fallback voor kaarten zonder tcgplayer-data (vooral niet-Engelstalige/oudere
+// kaarten) — daar is trendPrice/averageSellPrice al een enkel getal, geen varianten.
+export function extractMarketValueUsd(card: ApiCard): number | null {
+  const tcg = card.tcgplayer?.prices
+  if (tcg) {
+    let max: number | null = null
+    for (const variant of Object.values(tcg)) {
+      const v = variant as Record<string, unknown> | null | undefined
+      const market = v && typeof v.market === 'number' && v.market > 0 ? v.market : null
+      if (market !== null) max = max === null ? market : Math.max(max, market)
+    }
+    if (max !== null) return Math.round(max * 100) / 100
+  }
+
+  const cm = card.cardmarket?.prices as Record<string, unknown> | undefined
+  if (cm) {
+    const trend = typeof cm.trendPrice === 'number' && cm.trendPrice > 0 ? cm.trendPrice : null
+    const avg = typeof cm.averageSellPrice === 'number' && cm.averageSellPrice > 0 ? cm.averageSellPrice : null
+    const value = trend ?? avg
+    if (value !== null) return Math.round(value * 100) / 100
+  }
+
+  return null
+}
+
+// "Chase-gewogen" gemiddelde i.p.v. plat gemiddelde over de hele set: het gemiddelde van de
+// duurste ~10% kaarten (minimaal 3) weerspiegelt beter waarom iemand een pack zou kopen dan een
+// gemiddelde dat wordt platgeslagen door tientallen bulk-commons van een paar cent.
+export function computeSetAvgMarketValue(cards: ApiCard[]): number | null {
+  const values = cards
+    .map(extractMarketValueUsd)
+    .filter((v): v is number => v !== null)
+    .sort((a, b) => b - a)
+  if (values.length === 0) return null
+
+  const topN = Math.max(3, Math.ceil(values.length * 0.1))
+  const top = values.slice(0, topN)
+  const avg = top.reduce((sum, v) => sum + v, 0) / top.length
+  return Math.round(avg * 100) / 100
+}
+
 export async function upsertSet(pool: pg.Pool, set: ApiSet): Promise<void> {
   await pool.query(
     `insert into card_sets (
@@ -69,7 +113,7 @@ export async function upsertCard(pool: pg.Pool, setId: string, card: ApiCard): P
        supertype, subtypes, hp, types, evolves_from, evolves_to, rules, abilities, attacks,
        weaknesses, resistances, retreat_cost, converted_retreat_cost, artist, flavor_text,
        national_pokedex_numbers, legalities, regulation_mark,
-       tcgplayer_url, tcgplayer_prices, cardmarket_url, cardmarket_prices,
+       tcgplayer_url, tcgplayer_prices, cardmarket_url, cardmarket_prices, market_value_usd,
        source_updated_at, synced_at
      )
      values (
@@ -77,8 +121,8 @@ export async function upsertCard(pool: pg.Pool, setId: string, card: ApiCard): P
        $9, $10, $11, $12, $13, $14, $15, $16, $17,
        $18, $19, $20, $21, $22,
        $23, $24, $25,
-       $26, $27, $28, $29,
-       $30, $31, now()
+       $26, $27, $28, $29, $30,
+       $31, $32, now()
      )
      on conflict (id) do update set
        name = excluded.name,
@@ -109,6 +153,7 @@ export async function upsertCard(pool: pg.Pool, setId: string, card: ApiCard): P
        tcgplayer_prices = excluded.tcgplayer_prices,
        cardmarket_url = excluded.cardmarket_url,
        cardmarket_prices = excluded.cardmarket_prices,
+       market_value_usd = excluded.market_value_usd,
        source_updated_at = excluded.source_updated_at,
        synced_at = now()`,
     [
@@ -142,9 +187,14 @@ export async function upsertCard(pool: pg.Pool, setId: string, card: ApiCard): P
       toJson(card.tcgplayer?.prices),
       card.cardmarket?.url ?? null,
       toJson(card.cardmarket?.prices),
+      extractMarketValueUsd(card),
       card.updatedAt ?? null,
     ],
   )
+}
+
+export async function updateSetAvgMarketValue(pool: pg.Pool, setId: string, avgMarketValueUsd: number | null): Promise<void> {
+  await pool.query('update card_sets set avg_market_value_usd = $1 where id = $2', [avgMarketValueUsd, setId])
 }
 
 export async function fetchConfiguredSetIds(pool: pg.Pool): Promise<string[]> {

@@ -108,8 +108,10 @@ export interface BackendPackOpenResponse {
   cards: BackendPulledCard[]
   setCompletionBonusCoins: number | null
   unlockedAchievementNames: string[]
+  completedQuestNames: string[]
   playerLevel: number
   xp: number
+  xpGained: number
   xpForNextLevel: number
 }
 

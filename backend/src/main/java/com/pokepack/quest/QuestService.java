@@ -11,15 +11,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.temporal.WeekFields;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Alle huidige quests tellen "packs geopend" — er is (bewust, voor MVP-scope) geen aparte
- * metric-kolom in het schema. Zodra er quests met een ander soort doel bijkomen (bv. "verkoop
- * 5 kaarten"), is een `metric`-kolom op `quests` de voor de hand liggende uitbreiding.
+ * Elke quest heeft een metric (packs_opened, cards_collected, coins_earned, coins_spent) die
+ * bepaalt welk deel van een pack-opening 'm voortgang geeft — zie recordProgress. Metrics volgen
+ * bewust dezelfde namen als de UserStats-tellers waar ze conceptueel bij horen.
  */
 @Service
 public class QuestService {
@@ -53,10 +54,18 @@ public class QuestService {
         };
     }
 
+    /** Geeft voortgang aan elke actieve quest waarvan de metric in `metricAmounts` voorkomt, met
+     * het bijbehorende bedrag (bv. {"packs_opened":1, "cards_collected":4}). Retourneert de
+     * namen van quests die door dit ene record-moment nieuw voltooid zijn (voor UI-feedback). */
     @Transactional
-    public void recordPackOpened(User user) {
+    public List<String> recordProgress(User user, Map<String, Integer> metricAmounts) {
         LocalDate today = LocalDate.now();
+        List<String> newlyCompleted = new ArrayList<>();
+
         for (Quest quest : questRepository.findByActiveTrue()) {
+            Integer amount = metricAmounts.get(quest.getMetric());
+            if (amount == null || amount <= 0) continue;
+
             String periodKey = periodKeyFor(quest.getPeriod(), today);
             UserQuestProgress progress = progressRepository
                     .findCurrent(user.getId(), quest.getId(), periodKey)
@@ -64,7 +73,7 @@ public class QuestService {
 
             if (progress.isCompleted()) continue;
 
-            progress.incrementProgress();
+            progress.incrementProgress(amount);
             if (progress.getProgress() >= quest.getTargetCount()) {
                 progress.markCompleted();
                 user.setCoins(user.getCoins() + quest.getRewardCoins());
@@ -72,9 +81,11 @@ public class QuestService {
                 transactionRepository.save(new Transaction(user, TransactionType.QUEST_REWARD,
                         quest.getRewardCoins(), "Quest voltooid: " + quest.getName()));
                 userStatsService.recordCoinsEarned(user.getId(), quest.getRewardCoins());
+                newlyCompleted.add(quest.getName());
             }
             progressRepository.save(progress);
         }
+        return newlyCompleted;
     }
 
     @Transactional(readOnly = true)

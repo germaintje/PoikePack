@@ -50,8 +50,8 @@ public class UserQuestProgress {
         return progress;
     }
 
-    public void incrementProgress() {
-        this.progress += 1;
+    public void incrementProgress(int amount) {
+        this.progress += amount;
     }
 
     public Instant getCompletedAt() {

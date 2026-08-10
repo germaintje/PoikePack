@@ -16,7 +16,7 @@
 // Draaien: npm install && npm run sync (of npm run sync:all)
 
 import 'dotenv/config'
-import { createPool, fetchConfiguredSetIds, upsertCard, upsertSet } from './db.js'
+import { createPool, fetchConfiguredSetIds, upsertCard, upsertSet, computeSetAvgMarketValue, updateSetAvgMarketValue } from './db.js'
 import { PokemonTcgClient } from './pokemonTcgClient.js'
 
 async function main() {
@@ -74,6 +74,7 @@ async function main() {
         for (const card of cards) {
           await upsertCard(pool, setId, card)
         }
+        await updateSetAvgMarketValue(pool, setId, computeSetAvgMarketValue(cards))
         totalCards += cards.length
         console.log(`${prefix} ${cards.length} kaart(en) opgeslagen. (totaal tot nu toe: ${totalCards})`)
       } catch (err) {
